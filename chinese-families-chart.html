@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国家族影响力变迁 · 百分比堆叠面积图</title>
+<style>
+:root { color-scheme: light; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f9f9f7;
+  color: #0b0b0b;
+  min-height: 100vh;
+}
+
+/* ── Design tokens (validated palette — light/dark) ── */
+.viz-root {
+  --surface-1:      #fcfcfb;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --baseline:       #c3c2b7;
+  --border-ring:    rgba(11,11,11,0.10);
+  --slot-1: #2a78d6;
+  --slot-2: #eb6834;
+  --slot-3: #1baf7a;
+  --slot-4: #eda100;
+  --slot-5: #e87ba4;
+  --slot-6: #008300;
+  --slot-7: #4a3aa7;
+  --slot-8: #e34948;
+  --slot-9: #0891b2;
+  --slot-10: #c48828;
+  --slot-11: #8b3a6f;
+  --slot-12: #5c8a3c;
+  --slot-13: #b8542a;
+  --slot-14: #3b7a9e;
+  --slot-15: #9e4a6b;
+  --slot-16: #6b8c2e;
+  --slot-17: #a0525c;
+  --slot-18: #3d6b5e;
+  --slot-19: #8c6b2e;
+  --slot-20: #6b3d6b;
+  --slot-21: #4a6b8c;
+  --slot-22: #a06030;
+  --slot-23: #508060;
+  --slot-24: #804060;
+  --slot-25: #607080;
+  --slot-26: #b06840;
+  --slot-27: #3e6070;
+  --slot-28: #8c5070;
+  --slot-29: #5a7a40;
+  --slot-30: #a04850;
+  --slot-31: #4860a0;
+  --slot-32: #708040;
+  --slot-33: #904860;
+  --slot-34: #406880;
+  --slot-35: #885030;
+  --slot-36: #584878;
+  --slot-37: #c75b7a;
+  --slot-38: #3d9e8a;
+  --slot-39: #b07a3a;
+  --slot-40: #5555b8;
+  --slot-41: #6b9e3a;
+  --slot-42: #c04078;
+  --slot-43: #3a8c78;
+  --slot-44: #a06048;
+  --slot-45: #5c6ca8;
+  --slot-46: #8c8038;
+  --slot-47: #6a48a0;
+  --slot-48: #429898;
+  --slot-49: #a84c6c;
+  --slot-50: #6c7840;
+  color-scheme: light;
+  background: var(--surface-1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border-ring:    rgba(255,255,255,0.10);
+    --slot-1: #3987e5;
+    --slot-2: #d95926;
+    --slot-3: #199e70;
+    --slot-4: #c98500;
+    --slot-5: #d55181;
+    --slot-6: #008300;
+    --slot-7: #9085e9;
+    --slot-8: #e66767;
+    --slot-9: #22a3bf;
+    --slot-10: #b8881e;
+    --slot-11: #a04d7d;
+    --slot-12: #6a9e44;
+    --slot-13: #cc5e2e;
+    --slot-14: #4a8cb2;
+    --slot-15: #b25578;
+    --slot-16: #7da032;
+    --slot-17: #b85c66;
+    --slot-18: #4a7d6e;
+    --slot-19: #a07a32;
+    --slot-20: #7d487d;
+    --slot-21: #567a9e;
+    --slot-22: #b87038;
+    --slot-23: #5c9470;
+    --slot-24: #944a70;
+    --slot-25: #708090;
+    --slot-26: #c4764a;
+    --slot-27: #4a7082;
+    --slot-28: #a05c80;
+    --slot-29: #688e48;
+    --slot-30: #b8525c;
+    --slot-31: #5470b4;
+    --slot-32: #809448;
+    --slot-33: #a45270;
+    --slot-34: #4a7894;
+    --slot-35: #9c5c38;
+    --slot-36: #685488;
+    --slot-37: #d96b8c;
+    --slot-38: #4db09c;
+    --slot-39: #c48a48;
+    --slot-40: #6a6ad0;
+    --slot-41: #7db248;
+    --slot-42: #d4508c;
+    --slot-43: #48a08c;
+    --slot-44: #b87054;
+    --slot-45: #6e80be;
+    --slot-46: #a09448;
+    --slot-47: #7e5ab4;
+    --slot-48: #52aeae;
+    --slot-49: #bc5c7e;
+    --slot-50: #7e8c4e;
+  }
+}
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border-ring:    rgba(255,255,255,0.10);
+  --slot-1: #3987e5;
+  --slot-2: #d95926;
+  --slot-3: #199e70;
+  --slot-4: #c98500;
+  --slot-5: #d55181;
+  --slot-6: #008300;
+  --slot-7: #9085e9;
+  --slot-8: #e66767;
+  --slot-9: #22a3bf;
+  --slot-10: #b8881e;
+  --slot-11: #a04d7d;
+  --slot-12: #6a9e44;
+  --slot-13: #cc5e2e;
+  --slot-14: #4a8cb2;
+  --slot-15: #b25578;
+  --slot-16: #7da032;
+  --slot-17: #b85c66;
+  --slot-18: #4a7d6e;
+  --slot-19: #a07a32;
+  --slot-20: #7d487d;
+  --slot-21: #567a9e;
+  --slot-22: #b87038;
+  --slot-23: #5c9470;
+  --slot-24: #944a70;
+  --slot-25: #708090;
+  --slot-26: #c4764a;
+  --slot-27: #4a7082;
+  --slot-28: #a05c80;
+  --slot-29: #688e48;
+  --slot-30: #b8525c;
+  --slot-31: #5470b4;
+  --slot-32: #809448;
+  --slot-33: #a45270;
+  --slot-34: #4a7894;
+  --slot-35: #9c5c38;
+  --slot-36: #685488;
+  --slot-37: #d96b8c;
+  --slot-38: #4db09c;
+  --slot-39: #c48a48;
+  --slot-40: #6a6ad0;
+  --slot-41: #7db248;
+  --slot-42: #d4508c;
+  --slot-43: #48a08c;
+  --slot-44: #b87054;
+  --slot-45: #6e80be;
+  --slot-46: #a09448;
+  --slot-47: #7e5ab4;
+  --slot-48: #52aeae;
+  --slot-49: #bc5c7e;
+  --slot-50: #7e8c4e;
+}
+
+.viz-root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 40px 24px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.viz-header { margin-bottom: 24px; }
+.viz-header h1 {
+  font-size: 24px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: -0.01em;
+}
+.viz-header p {
+  font-size: 14px; color: var(--text-secondary); margin-top: 4px;
+}
+
+/* ── Controls ── */
+.controls-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.controls-row button {
+  height: 32px; padding: 0 14px;
+  border: 1px solid var(--baseline); border-radius: 6px;
+  background: var(--surface-1); color: var(--text-secondary);
+  font-size: 13px; font-family: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.controls-row button:hover { background: var(--gridline); border-color: var(--text-muted); }
+.controls-row button:active { background: var(--baseline); }
+.controls-row button.is-active {
+  background: var(--slot-1); color: #fff; border-color: var(--slot-1);
+}
+.controls-row button svg { width: 14px; height: 14px; flex-shrink: 0; }
+.controls-row .sep { width: 1px; height: 20px; background: var(--baseline); margin: 0 4px; }
+.speed-label { font-size: 13px; color: var(--text-muted); }
+.speed-select {
+  height: 32px; padding: 0 8px; border: 1px solid var(--baseline);
+  border-radius: 6px; background: var(--surface-1);
+  color: var(--text-secondary); font-size: 13px; font-family: inherit; cursor: pointer;
+}
+
+/* ── Chart panel ── */
+.chart-panel {
+  position: relative; background: var(--surface-1);
+  border: 1px solid var(--border-ring); border-radius: 10px; overflow: hidden;
+}
+.chart-svg { display: block; width: 100%; }
+
+/* ── Tooltip ── */
+.tooltip {
+  position: absolute; pointer-events: none;
+  background: var(--surface-1); border: 1px solid var(--border-ring);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.6;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  display: none; z-index: 100; min-width: 180px;
+}
+.tooltip .tt-date {
+  font-weight: 600; color: var(--text-primary); font-size: 13px;
+  margin-bottom: 6px; border-bottom: 1px solid var(--gridline); padding-bottom: 4px;
+}
+.tooltip .tt-row {
+  display: flex; align-items: center; gap: 8px; padding: 2px 0;
+}
+.tooltip .tt-swatch {
+  width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+}
+.tooltip .tt-name { color: var(--text-primary); font-weight: 600; }
+.tooltip .tt-pct {
+  color: var(--text-secondary); margin-left: auto; font-variant-numeric: tabular-nums;
+}
+.tooltip .tt-members {
+  color: var(--text-muted); font-size: 12px; margin-left: 18px; line-height: 1.4;
+}
+
+/* ── Brush / context timeline ── */
+.brush-panel {
+  margin-top: 8px; background: var(--surface-1);
+  border: 1px solid var(--border-ring); border-radius: 10px; overflow: hidden;
+}
+.brush-panel .brush-svg { display: block; width: 100%; }
+
+/* ── Person labels ── */
+.person-label {
+  font-size: 12px; font-weight: 500;
+  fill: var(--text-primary);
+  cursor: pointer;
+  paint-order: stroke;
+  stroke: var(--surface-1);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+  transition: fill 0.15s;
+}
+.person-label:hover { fill: var(--slot-1); }
+.person-label-sub {
+  font-size: 10px;
+  fill: var(--text-muted);
+  paint-order: stroke;
+  stroke: var(--surface-1);
+  stroke-width: 3px;
+}
+
+/* ── Bio modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal-card {
+  background: var(--surface-1); border-radius: 12px; padding: 28px 32px;
+  max-width: 440px; width: calc(100% - 48px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.modal-card h3 {
+  font-size: 20px; font-weight: 600; margin-bottom: 2px; color: var(--text-primary);
+}
+.modal-card .bio-family {
+  font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+}
+.modal-card .bio-text {
+  font-size: 14px; line-height: 1.8; color: var(--text-secondary);
+}
+.modal-card .bio-meta {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--gridline);
+  font-size: 13px; color: var(--text-muted);
+  display: flex; gap: 20px;
+}
+.modal-card button {
+  margin-top: 20px; height: 36px; padding: 0 20px;
+  border: 1px solid var(--baseline); border-radius: 6px;
+  background: var(--surface-1); color: var(--text-secondary);
+  font-size: 14px; font-family: inherit; cursor: pointer; float: right;
+}
+.modal-card button:hover { background: var(--gridline); }
+
+/* ── Legend ── */
+.legend-row {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  margin-top: 12px; padding: 0 4px;
+}
+.legend-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-secondary);
+}
+.legend-swatch {
+  width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* ── Table toggle ── */
+.table-toggle { margin-top: 16px; text-align: right; }
+.table-toggle button {
+  height: 32px; padding: 0 14px; border: 1px solid var(--baseline);
+  border-radius: 6px; background: var(--surface-1); color: var(--text-secondary);
+  font-size: 13px; font-family: inherit; cursor: pointer;
+}
+.data-table-wrap {
+  margin-top: 8px; max-height: 300px; overflow-y: auto;
+  border: 1px solid var(--border-ring); border-radius: 8px; display: none;
+}
+.data-table-wrap.visible { display: block; }
+.data-table-wrap table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.data-table-wrap thead { position: sticky; top: 0; z-index: 1; }
+.data-table-wrap th {
+  background: var(--surface-1); color: var(--text-secondary); font-weight: 600;
+  text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--baseline);
+}
+.data-table-wrap td {
+  padding: 6px 12px; color: var(--text-primary);
+  border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums;
+}
+.data-table-wrap .td-swatch {
+  display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+  margin-right: 6px; vertical-align: middle;
+}
+
+/* ── Keyboard hint ── */
+.kbd-hint { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+.kbd-hint kbd {
+  display: inline-block; padding: 1px 6px; border: 1px solid var(--baseline);
+  border-radius: 3px; font-family: inherit; font-size: 11px; background: var(--surface-1);
+}
+
+@media (max-width: 768px) {
+  .viz-root { padding: 16px; }
+  .viz-header h1 { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+<div class="viz-root">
+
+  <div class="viz-header">
+    <h1>中国家族影响力变迁</h1>
+    <p>百分比堆叠面积图 · 横轴为时间（前246~1912，秦统一至清帝退位），纵轴为各家族在当时的政治影响力占比。悬停查看详情，点击人名查看简介，拖动下方时间轴或使用方向键浏览历史。</p>
+  </div>
+
+  <div class="controls-row" id="controls">
+    <button id="btn-prev" title="后退 50 年">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12,2 5,8 12,14"/></svg>
+    </button>
+    <button id="btn-play" title="播放/暂停">
+      <svg id="icon-play" viewBox="0 0 16 16" fill="currentColor"><polygon points="4,1 14,8 4,15"/></svg>
+      <svg id="icon-pause" viewBox="0 0 16 16" fill="currentColor" style="display:none"><rect x="2" y="1" width="4" height="14"/><rect x="10" y="1" width="4" height="14"/></svg>
+    </button>
+    <button id="btn-next" title="前进 50 年">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,2 11,8 4,14"/></svg>
+    </button>
+    <span class="sep"></span>
+    <button id="btn-zoom-in" title="放大">🔍+</button>
+    <button id="btn-zoom-out" title="缩小">🔍−</button>
+    <button id="btn-reset" title="重置视图">⟳ 重置</button>
+    <span class="sep"></span>
+    <span class="speed-label">播放速度</span>
+    <select class="speed-select" id="speed-select">
+      <option value="0.25">0.25×</option>
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+      <option value="4">4×</option>
+    </select>
+  </div>
+
+  <div class="chart-panel" id="chart-panel">
+    <svg class="chart-svg" id="chart-svg"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="brush-panel" id="brush-panel">
+    <svg class="brush-svg" id="brush-svg"></svg>
+  </div>
+
+  <div class="legend-row" id="legend-row"></div>
+
+  <div class="table-toggle">
+    <button id="btn-table">📋 数据表</button>
+  </div>
+  <div class="data-table-wrap" id="table-wrap">
+    <table id="data-table"><thead></thead><tbody></tbody></table>
+  </div>
+
+  <div class="kbd-hint">
+    键盘操作：<kbd>←</kbd> <kbd>→</kbd> 移动时间窗口 &nbsp; <kbd>Shift</kbd>+<kbd>←</kbd> <kbd>→</kbd> 快速移动 &nbsp; <kbd>空格</kbd> 播放/暂停 &nbsp; <kbd>+</kbd> <kbd>−</kbd> 缩放时间轴
+  </div>
+
+</div>
+
+<!-- Bio modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-card" id="modal-card">
+    <h3 id="modal-name"></h3>
+    <div class="bio-family" id="modal-family"></div>
+    <div class="bio-text" id="modal-text"></div>
+    <div class="bio-meta" id="modal-meta"></div>
+    <button id="modal-close">关闭</button>
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js">
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   DATA: 11 Chinese families, their key members, and historical influence
+   Each member: name, title, startYear (-/BC), endYear, raw influence score, bio
+   Family influence at time t = sum of active members' influences,
+   then normalized across all families to 100%.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const rawData = [
+
+  // ═══ 嬴家 — Qin imperial family · slot 1 (blue) ═══
+  { family:"嬴家", name:"嬴政",   title:"始皇帝",      start:-246, end:-210, influence:100,
+    bio:"嬴政（前259–前210），秦庄襄王之子，十三岁即位为秦王。前230年起用十年灭六国，前221年统一天下，自称始皇帝。推行书同文、车同轨、统一度量衡，废分封设郡县，筑长城御匈奴。是中国历史上第一个大一统帝国的缔造者，也是争议最大的帝王之一——焚书坑儒与千古一帝同属一人。" },
+  { family:"嬴家", name:"扶苏",   title:"长公子",      start:-215, end:-210, influence:35,
+    bio:"扶苏（？–前210），秦始皇长子。为人仁厚宽和，因谏阻焚书坑儒触怒始皇，被派往上郡监蒙恬军。始皇东巡崩于沙丘，赵高、李斯秘不发丧，矫诏赐死扶苏。扶苏见诏即欲自杀，蒙恬劝其复核，扶苏说「父赐子死，尚安复请」，遂自刎。其仁德之名在民间广为流传，陈胜起义时曾假借扶苏名号。" },
+  { family:"嬴家", name:"胡亥",   title:"秦二世",      start:-210, end:-207, influence:45,
+    bio:"胡亥（前230–前207），秦始皇第十八子。始皇崩于沙丘，赵高说服李斯合谋立胡亥为帝，赐死扶苏。在位期间大杀宗室公子公主及功臣（蒙恬、李斯皆死），法令诛罚日益刻深。陈胜吴广揭竿而起，天下云集响应。前207年，赵高逼迫胡亥自杀于望夷宫。秦帝国的崩溃速度在中国历史上绝无仅有。" },
+  { family:"嬴家", name:"子婴",   title:"秦王子婴",    start:-207, end:-206, influence:8,
+    bio:"子婴（？–前206），秦始皇之孙（一说始皇之弟）。赵高杀胡亥后，去帝号改称秦王，立子婴。即位仅五日即设计诛杀赵高三族。但大势已去，刘邦入关时子婴素车白马、颈系绳索，跪降于轵道旁。一个多月后项羽入咸阳，杀子婴，秦亡。他是嬴家最后的回光返照。" },
+
+  // ═══ 项家 — Chu military aristocracy · slot 2 (orange) ═══
+  { family:"项家", name:"项燕",   title:"楚大将军",    start:-230, end:-223, influence:28,
+    bio:"项燕（？–前223），楚国名将，项羽祖父。前224年秦王政派王翦率六十万大军灭楚，项燕在蕲县兵败。前223年秦军破楚都寿春，项燕自杀。楚人对其极为怀念——「楚虽三户，亡秦必楚」的预言正是因为项燕在楚人心中的地位。后来项梁项羽起兵，正是凭借这份威望号召楚地豪杰。" },
+  { family:"项家", name:"项梁",   title:"武信君",      start:-209, end:-208, influence:22,
+    bio:"项梁（？–前208），项羽叔父，项燕之子。陈胜起义后，项梁与项羽杀会稽郡守殷通，起兵响应，得精兵八千人——这便是江东子弟兵的起源。他接受范增建议，拥立楚怀王之孙熊心为楚王，仍号「楚怀王」以凝聚人心。后因轻敌，在定陶被秦将章邯夜袭，兵败战死。他的死让项羽从副手变为领袖。" },
+  { family:"项家", name:"项羽",   title:"西楚霸王",    start:-209, end:-202, influence:90,
+    bio:"项羽（前232–前202），名籍，字羽，项燕之孙。身高八尺，力能扛鼎。巨鹿之战破釜沉舟，以五万楚军大败章邯二十万秦军主力，威震天下。入关后屠咸阳、杀子婴、焚秦宫。自封西楚霸王，分封十八路诸侯。楚汉相争四年，垓下被围、四面楚歌、霸王别姬，最终乌江自刎，年仅三十一岁。南宋李清照叹曰：「至今思项羽，不肯过江东。」" },
+
+  // ═══ 刘家 — Han imperial family · slot 3 (aqua) ═══
+  { family:"刘家", name:"刘邦",   title:"汉高祖",      start:-209, end:-195, influence:95,
+    bio:"刘邦（前256–前195），字季，沛郡丰邑（今江苏丰县）人。出身农家，秦时为泗水亭长。陈胜起义后斩白蛇起义，先入关中约法三章收秦人之心；后与项羽争天下，屡败屡战，终于在垓下之战击败项羽。前202年即皇帝位，建立汉朝。从一介亭长到开国之君，毛泽东评其是「封建皇帝里边最厉害的一个」。" },
+  { family:"刘家", name:"吕雉",   title:"吕太后",      start:-202, end:-180, influence:60,
+    bio:"吕雉（前241–前180），字娥姁，刘邦之妻。中国历史上第一位有记载的皇后和皇太后，也是第一位临朝称制的女性。刘邦死后惠帝柔弱，吕后以太后身份执掌大权十五年。她将戚夫人做成「人彘」的残忍手段千古惊骇；但她延续了刘邦的休养生息政策，为文景之治打下基础。司马迁在《史记》中为她立《吕太后本纪》，是唯一进入本纪的女性。" },
+  { family:"刘家", name:"刘盈",   title:"汉惠帝",      start:-195, end:-188, influence:15,
+    bio:"刘盈（前210–前188），刘邦与吕后嫡子。十六岁即位，性格仁弱，朝政全由吕后把持。吕后将戚夫人做成「人彘」后叫他去观看，刘盈大受刺激，说「此非人所为，臣为太后子，终不能治天下」，从此沉迷酒色不问政事，在位七年后抑郁而终，年仅二十二岁。" },
+  { family:"刘家", name:"刘恒",   title:"汉文帝",      start:-180, end:-157, influence:55,
+    bio:"刘恒（前203–前157），刘邦第四子，母薄姬。因薄姬不受宠，母子得以在吕后时代平安度过。吕后死后，周勃陈平铲除诸吕，迎立代王刘恒为帝。他即位后轻徭薄赋、废除肉刑、提倡节俭。在位二十三年，「宫室苑囿车骑服御无所增益」。与其子景帝共同开创中国封建社会的第一个盛世——「文景之治」。" },
+  { family:"刘家", name:"刘启",   title:"汉景帝",      start:-157, end:-141, influence:50,
+    bio:"刘启（前188–前141），汉文帝之子。继承父亲政策与民休息。在位期间爆发吴楚七国之乱——七个诸侯王国联合反叛，他起用周亚夫，三个月平定。但同时也冤杀晁错以安抚叛军。父子二人共同开创「文景之治」，国库充盈、百姓富足，为汉武帝的宏图霸业奠定了雄厚的国力基础。" },
+  { family:"刘家", name:"刘彻",   title:"汉武帝",      start:-141, end:-87,  influence:100,
+    bio:"刘彻（前156–前87），汉景帝第十子，十六岁即位，在位五十四年——是整个中国帝制时代在位时间最长的皇帝之一。北击匈奴（卫青霍去病封狼居胥）、南平百越、东定朝鲜、西通西域（张骞凿空）。罢黜百家独尊儒术，设立太学。但他晚年穷兵黩武、巫蛊之祸牵连无数，下《轮台罪己诏》深刻反思——千古一帝的功过是非，至今争论不休。" },
+  { family:"刘家", name:"刘弗陵", title:"汉昭帝",      start:-87,  end:-74,  influence:25,
+    bio:"刘弗陵（前95–前74），汉武帝幼子，八岁即位。霍光、金日磾、上官桀受遗诏辅政。在位期间霍光执掌大权，延续武帝后期的与民休息政策。在位十三年，二十一岁无嗣而终。他的早逝引发了继嗣之争，也把霍光的权势推向顶峰。" },
+  { family:"刘家", name:"刘询",   title:"汉宣帝",      start:-74,  end:-48,  influence:60,
+    bio:"刘询（前91–前48），原名刘病已，戾太子刘据之孙，汉武帝曾孙。巫蛊之祸中全家遇害，他尚在襁褓中也被下狱，后被收养于民间。霍光废昌邑王刘贺后，迎立他为帝。因深知民间疾苦，在位期间「吏称其职，民安其业」，史称「孝宣中兴」。霍光死后他彻底清算霍家——隐忍十年，一朝反击，手段凌厉。" },
+  { family:"刘家", name:"刘玄",   title:"更始帝",      start:23,   end:25,   influence:25,
+    bio:"刘玄（？–25），字圣公，汉景帝之子长沙定王刘发的后代。王莽末年加入绿林军，因其西汉宗室身份被绿林军将领拥立为帝，年号「更始」。他性格懦弱、缺乏决断——入长安后沉溺酒色，又猜忌杀害多名功臣（包括刘秀之兄刘縯），导致众叛亲离。25年赤眉军攻入长安，刘玄投降后被杀。他是两汉之交那段混乱岁月的过渡人物——为王莽新朝与光武中兴之间架起了一座短暂的桥梁。" },
+  { family:"刘家", name:"刘秀",   title:"汉光武帝",    start:25,   end:57,   influence:85,
+    bio:"刘秀（前5–57），字文叔，汉高祖九世孙。王莽末年天下大乱，刘秀与兄刘縯在南阳起兵。昆阳之战，他以不足万人的兵力大破王莽新军四十二万——这一战堪称中国军事史上最不可思议的以少胜多。25年称帝建立东汉，十二年内扫平各方割据势力，完成统一。在位期间轻徭薄赋、「柔道治国」，史称「光武中兴」。" },
+  { family:"刘家", name:"刘庄",   title:"汉明帝",      start:57,   end:75,   influence:45,
+    bio:"刘庄（28–75），汉光武帝刘秀第四子。继承父亲政策，严明吏治、限制外戚。在位期间命班超出使西域，恢复对西域的控制。佛教在此期间正式传入中国——他梦见金人后派使者去西域求法，归来后在洛阳建白马寺。与其子汉章帝共同开创「明章之治」。" },
+  { family:"刘家", name:"刘炟",   title:"汉章帝",      start:75,   end:88,   influence:50,
+    bio:"刘炟（57–88），汉明帝刘庄第五子。十九岁即位，在位期间继续执行光武帝和明帝的政策，轻徭薄赋、劝课农桑。他本人擅长书法，创立「章草」书体——因他而命名。在位十三年间东汉国力达到鼎盛，与其父明帝共创「明章之治」。但晚年重用外戚窦宪，开启了东汉外戚专权的序幕。" },
+  { family:"刘家", name:"刘肇",   title:"汉和帝",      start:88,   end:106,  influence:40,
+    bio:"刘肇（79–106），汉章帝刘炟第四子。十岁即位，窦太后临朝称制，其兄窦宪以大将军身份掌控朝政。永元四年（92年），十四岁的刘肇联合宦官郑众发动宫廷政变，一举铲除窦氏势力，收归皇权。亲政后他勤政爱民、任用贤良，东汉国力持续强盛。可惜二十七岁便英年早逝——他若长寿，东汉的外戚宦官之祸或许不会来得那么快。" },
+  { family:"刘家", name:"刘祜",   title:"汉安帝",      start:106,  end:125,  influence:20,
+    bio:"刘祜（94–125），汉章帝之孙，清河孝王刘庆之子。汉殇帝即位不满一年即夭折，邓太后立十三岁的刘祜为帝。邓太后临朝听政十五年，刘祜始终是傀儡——建光元年（121年）邓太后去世，他终于亲政，随即清洗邓氏外戚、重用宦官。东汉宦官专权从此刻加剧。在位十九年，在南巡途中病逝于宛城。" },
+  { family:"刘家", name:"刘保",   title:"汉顺帝",      start:125,  end:144,  influence:25,
+    bio:"刘保（115–144），汉安帝刘祜之子。安帝驾崩后阎太后立北乡侯刘懿为帝，宦官孙程等十九人发动政变拥立刘保即位。他在位期间外戚梁商、梁冀父子相继掌权——尤其是梁冀，开启了东汉最黑暗的外戚专权时代。刘保本人性格柔懦，无力约束梁氏，在位十九年病逝。" },
+  { family:"刘家", name:"刘炳",   title:"汉冲帝",      start:144,  end:145,  influence:3,
+    bio:"刘炳（143–145），汉顺帝刘保之子。一岁时即位，尚在襁褓之中，由梁太后临朝称制，其兄梁冀以大将军身份把持朝政。在位仅五个月，不满两岁便夭折——东汉第一个婴儿皇帝，也是梁冀专权的开始。" },
+  { family:"刘家", name:"刘缵",   title:"汉质帝",      start:145,  end:146,  influence:5,
+    bio:"刘缵（138–146），汉章帝玄孙，渤海孝王刘鸿之子。汉冲帝夭折后梁冀立年仅七岁的刘缵为帝。据《后汉书》记载，刘缵虽年幼却聪慧过人，曾在大殿上当着群臣的面指着梁冀说「此跋扈将军也」——梁冀闻之大怒，随即命人在食物中下毒，将这位八岁的小皇帝毒死。他是东汉唯一因直言而被权臣杀害的皇帝。" },
+  { family:"刘家", name:"刘志",   title:"汉桓帝",      start:146,  end:168,  influence:35,
+    bio:"刘志（132–168），汉章帝曾孙，蠡吾侯刘翼之子。汉质帝被梁冀毒杀后，梁冀立十四岁的刘志为帝。在位前期完全受制于梁冀，直到延熹二年（159年）联合宦官单超等五人发动政变，一举铲除梁冀及其党羽——抄没梁冀家产折合三十余万万钱，相当于东汉全国半年租税。但他铲除外戚后转而依赖宦官，引发第一次「党锢之祸」，东汉政治由此糜烂不可收拾。" },
+  { family:"刘家", name:"刘宏",   title:"汉灵帝",      start:168,  end:189,  influence:30,
+    bio:"刘宏（156–189），汉章帝玄孙，解渎亭侯刘苌之子。汉桓帝无子而终，他被迎立为帝。在位期间宦官专权达到顶峰——十常侍乱政、党锢之祸再起。而他本人沉溺享乐，公开卖官鬻爵——从三公九卿到县令郡守皆有定价。黄巾起义正是在他治下爆发：「苍天已死，黄天当立，岁在甲子，天下大吉」。东汉王朝名存实亡。" },
+  { family:"刘家", name:"刘协",   title:"汉献帝",      start:189,  end:220,  influence:8,
+    bio:"刘协（181–234），汉灵帝刘宏次子。八岁时被董卓拥立为帝，从此开始了漫长的傀儡生涯。初为董卓操控，后落入李傕郭汜之手，颠沛流离、食不果腹。建安元年（196年）被曹操迎至许都——虽名为天子实为囚徒，「挟天子以令诸侯」的「挟」字道尽了他的处境。220年曹丕逼其禅让，东汉四百年的江山至此终结。他被封为山阳公得以善终——是亡国之君中结局较好的一位。他在封地行医济民，山阳百姓至今有祭祀他的传统。" },
+  { family:"刘家", name:"刘备",   title:"汉昭烈帝",    start:208,  end:223,  influence:40,
+    bio:"刘备（161–223），字玄德，涿郡涿县人，汉景帝之子中山靖王刘胜的后代。早年家贫以织席贩履为生。黄巾起义后起兵，辗转依附公孙瓒、陶谦、曹操、袁绍、刘表等诸侯，半生颠沛流离。直到四十七岁时三顾茅庐请出诸葛亮，才有了清晰的政治蓝图。赤壁之战后夺取荆州四郡，再入蜀取益州、汉中，建立蜀汉政权。221年在成都称帝延续汉祚。两年后伐吴兵败夷陵，退守白帝城托孤诸葛亮：「君才十倍曹丕，必能安国，终定大事。」陈寿评其「弘毅宽厚，知人待士，盖有高祖之风」。是三国时代最具传奇色彩的草根英雄。" },
+  { family:"刘家", name:"刘禅",   title:"汉后主",      start:223,  end:263,  influence:12,
+    bio:"刘禅（207–271），字公嗣，刘备之子，小名阿斗。十七岁即位，诸葛亮受托孤之重任辅政十二年。诸葛亮在世时「政事无巨细，咸决于亮」；诸葛亮死后蒋琬、费祎、董允相继辅政，蜀汉维持了三十年稳定。但后期宠信宦官黄皓，朝政日趋腐败。263年魏国邓艾偷渡阴平兵临成都，刘禅出城投降——「此间乐，不思蜀」成为他留给历史最著名的注脚。蜀汉亡国后他被迁往洛阳封安乐公，安然度过余生。关于他究竟是庸碌无能还是在乱世中明智保身，史学界至今争论不休。" },
+
+  // ═══ 王家 — Wang clan (Wang Mang) · slot 4 (yellow) ═══
+  { family:"王家", name:"王政君", title:"太皇太后",    start:-48,  end:13,   influence:30,
+    bio:"王政君（前71–13），汉元帝皇后，汉成帝之母。她身历西汉七朝，享年八十四岁——是中国历史上寿命最长的太后之一。因她的长寿和王氏外戚的长期经营，其侄王莽得以逐步积累声望、架空刘氏。王莽篡汉后向她索要传国玉玺，她怒斥「我汉家老寡妇，旦暮且死，欲与此玺俱葬」，将玉玺掷于地上，摔坏一角——这便是传国玉玺缺角的由来。" },
+  { family:"王家", name:"王莽",   title:"新朝皇帝",    start:1,    end:23,   influence:85,
+    bio:"王莽（前45–23），字巨君，汉元帝皇后王政君之侄。他以谦恭俭朴博得朝野盛誉——散家财、让封地、杀子正法。公元9年篡汉自立，改国号为「新」。推行全面复古改制：王田制（土地国有）、废除奴隶制、币制改革——这些超越时代两千年的政策在现实中引发全面混乱。23年绿林军攻入长安，王莽被杀，头骨被后世帝王收藏以作警示。胡适称他为「中国第一位社会主义者」，但更主流的评价是「伪君子」与「空想改革家」。" },
+
+  // ═══ 窦家 — Dou consort clan · slot 9 (cyan) ═══
+  { family:"窦家", name:"窦宪",   title:"大将军",      start:80,   end:92,   influence:45,
+    bio:"窦宪（？–92），字伯度，扶风平陵人，汉章帝窦皇后之兄。章帝去世后，其妹窦太后临朝称制，窦宪以侍中身份掌控朝政。他曾因罪惧诛自请率军北击匈奴——永元元年（89年），窦宪与耿秉率汉军深入漠北，在稽落山大破北匈奴，斩首一万三千级，降者二十余万，登燕然山刻石记功而还——这便是「燕然勒功」的典故，与霍去病「封狼居胥」并称中国军事史上的最高荣耀。但他居功自傲、权势熏天——「窦氏父子兄弟并为卿校，充满朝廷」。永元四年（92年），汉和帝联合宦官郑众发动政变，收回窦宪大将军印绶，迫其自杀。" },
+
+  // ═══ 邓家 — Deng consort clan · slot 10 (gold) ═══
+  { family:"邓家", name:"邓绥",   title:"邓太后",      start:100,  end:121,  influence:55,
+    bio:"邓绥（81–121），南阳新野人，东汉开国功臣邓禹之孙女。十六岁入宫为贵人，以姿色出众、通晓经史而深受汉和帝宠爱。和帝去世后她以太后身份临朝称制十六年，先后立汉殇帝、汉安帝——是东汉执政时间最长的太后。她执政期间躬行节俭、减免赋税、平反冤狱、限制外戚（邓氏子弟犯法与其他家族同罪）、开办官学、命班昭续写《汉书》。史称「兴灭国，继绝世，录功臣，复宗室」，东汉在她治下延续了中兴气象。但权力带来的诱惑让她迟迟不肯归政于已成年的汉安帝——121年邓太后去世，安帝随即清洗邓氏，这位杰出的女性政治家身后凄凉。" },
+
+  // ═══ 梁家 — Liang consort clan · slot 11 (aubergine) ═══
+  { family:"梁家", name:"梁冀",   title:"大将军",      start:130,  end:159,  influence:60,
+    bio:"梁冀（？–159），字伯卓，安定乌氏人，汉顺帝梁皇后之兄。面貌丑陋、「鸢肩豺目」，却以外戚身份历任大将军，专断朝政近二十年——历顺帝、冲帝、质帝、桓帝四朝，三立皇帝（冲帝、质帝、桓帝），毒杀一帝（质帝刘缵说他「跋扈将军」后即被鸩杀）。他权倾天下，「百僚侧目，莫敢违命」。府第园林堪比皇宫，强占民田绵延近千里。延熹二年（159年），忍无可忍的汉桓帝联合宦官单超等五人发动政变，包围梁冀府邸，收其大将军印绶。梁冀自知大势已去，与妻子孙寿自杀。抄没其家产折合钱三十余万万——「以充王府，用减天下税租之半」。他是中国历史上敛财最多、权势最大的外戚之一。" },
+
+  // ═══ 曹家 — Wei imperial family · slot 5 (magenta) ═══
+  { family:"曹家", name:"曹操",   title:"魏王/丞相",   start:190,  end:220,  influence:90,
+    bio:"曹操（155–220），字孟德，沛国谯人。二十岁举孝廉为郎。黄巾起义时起兵，迎汉献帝于许都，「挟天子以令诸侯」。官渡之战以少胜多大败袁绍，统一北方。精通兵法注《孙子》，文学上与其子曹丕曹植合称「三曹」——「对酒当歌，人生几何」「东临碣石以观沧海」皆出他手。被曹丕追尊为魏武帝。后世评价「治世之能臣，乱世之奸雄」，是三国时代最具人格魅力的复杂人物。" },
+  { family:"曹家", name:"曹丕",   title:"魏文帝",      start:217,  end:226,  influence:75,
+    bio:"曹丕（187–226），字子桓，曹操次子。220年逼汉献帝禅让，建立魏国，定都洛阳——东汉四百年的江山至此终结。在位期间确立九品中正制，深远影响了此后三百年的选官制度。他在文学上的成就同样耀眼：《典论·论文》是中国最早的文学批评专著，所作《燕歌行》是现存最早的完整文人七言诗。可惜在位仅六年便病逝。" },
+  { family:"曹家", name:"曹叡",   title:"魏明帝",      start:226,  end:239,  influence:50,
+    bio:"曹叡（204–239），字元仲，曹丕之子。在位初期能纳谏用贤、指挥击退吴蜀多次进攻。但后期大修洛阳宫殿、耽于享乐。239年临终时，将八岁的养子曹芳托孤于司马懿和曹爽——这个决定，为司马氏篡魏铺平了道路。曹叡驾崩仅十年后，高平陵之变爆发。" },
+
+  // ═══ 孙家 — Wu imperial family · slot 6 (green) ═══
+  { family:"孙家", name:"孙坚",   title:"破虏将军",    start:184,  end:191,  influence:18,
+    bio:"孙坚（155–191），字文台，吴郡富春（今浙江杭州富阳）人，据传是春秋军事家孙武的后代。少为县吏，十七岁时便单挑海盗群盗，名震乡里。黄巾起义随朱儁征讨有功，参与讨伐董卓的关东联军——他是唯一在正面战场上击败过董卓军的诸侯。攻入洛阳后从枯井中得到传国玉玺。191年奉袁术之命攻打刘表，在襄阳岘山被黄祖军士射杀，年仅三十六岁。被孙权追尊为武烈皇帝。" },
+  { family:"孙家", name:"孙策",   title:"讨逆将军",    start:195,  end:200,  influence:28,
+    bio:"孙策（175–200），字伯符，孙坚长子，人称「小霸王」。父亲战死时他年仅十七岁，以传国玉玺为质向袁术借兵千人渡江。此后数年横扫江东——平刘繇、败严白虎、降王朗——短短四五年便拿下吴郡、会稽、丹阳等六郡，打下整个东吴的基业。200年外出打猎时为仇家刺客所伤，临终将印绶交给十九岁的弟弟孙权，说：「举江东之众，决机于两阵之间，与天下争衡，卿不如我；举贤任能，各尽其心，以保江东，我不如卿。」" },
+  { family:"孙家", name:"孙权",   title:"吴大帝",      start:200,  end:252,  influence:70,
+    bio:"孙权（182–252），字仲谋，孙坚次子。十九岁继兄之位统领江东，少年老成。赤壁之战联刘抗曹，一把火烧掉曹操统一天下的大梦；夷陵之战火烧连营七百里，大败刘备。229年称帝，定都建业（今南京）。在位五十二年间开发江南、派卫温到达夷洲（台湾）——这是中国历史上第一次有记载的大陆与台湾的官方往来。曹操曾赞叹「生子当如孙仲谋」。晚年却在继承问题上反复无常，导致东吴政坛动荡。" },
+
+  // ═══ 司马家 — Jin imperial family · slot 7 (violet) ═══
+  { family:"司马家", name:"司马懿",title:"太傅/宣帝",  start:220,  end:251,  influence:60,
+    bio:"司马懿（179–251），字仲达，河内温县人。出身士族，少有奇节，聪明多大略。初为曹操丞相府文学掾，因「鹰视狼顾」之相被曹操猜忌。但他极善韬光养晦——装病拒仕、诈病赚曹爽——是中国历史上最著名的隐忍大师。249年趁曹爽陪皇帝出城祭陵，发动高平陵之变控制洛阳，诛杀曹爽三族，从此曹魏政权落入司马氏之手。被孙子司马炎追尊为晋宣帝。" },
+  { family:"司马家", name:"司马师",title:"大将军/景帝",start:251,  end:255,  influence:45,
+    bio:"司马师（208–255），字子元，司马懿长子。沉毅多大略，继父亲之后掌控魏国朝政。他果断废黜魏帝曹芳，改立曹髦。255年淮南毋丘俭、文钦起兵讨伐司马氏，司马师亲自率军镇压。虽然成功平叛，但眼疾发作——据说眼球迸出——不久病死于许昌，时年四十七岁。" },
+  { family:"司马家", name:"司马昭",title:"晋王/文帝",  start:255,  end:265,  influence:65,
+    bio:"司马昭（211–265），字子上，司马懿次子。继兄司马师之位掌权。263年派钟会、邓艾两路伐蜀，邓艾偷渡阴平灭蜀汉。同年，魏帝曹髦不堪做傀儡，亲率宫人讨伐司马昭，被司马昭的手下成济当街弑杀——「司马昭之心，路人皆知」由此成为千古名言。265年病逝，几个月后其子司马炎便篡魏自立。" },
+  { family:"司马家", name:"司马炎",title:"晋武帝",      start:265,  end:290,  influence:85,
+    bio:"司马炎（236–290），字安世，司马昭之子。265年逼魏元帝曹奂禅让，建立西晋。280年发兵二十万六路伐吴，吴主孙皓投降，三国终归一统。在位前期太康年间经济繁荣，「天下无穷人」。但统一后迅速怠惰腐化——后宫近万人，以羊车选寝。他大封宗室二十七人为王，赋予军政大权——这个决定在他死后仅一年就引爆了「八王之乱」，西晋由此走向崩溃。" },
+
+  // ═══ 诸葛家 — Zhuge family · slot 8 (red) ═══
+  { family:"诸葛家", name:"诸葛亮",title:"蜀汉丞相",   start:208,  end:234,  influence:45,
+    bio:"诸葛亮（181–234），字孔明，号卧龙，琅琊阳都人。早年隐居隆中，刘备三顾茅庐感动他出山相助。《隆中对》一席话便定下三分天下的大战略。赤壁之战促成孙刘联盟击败曹操；入蜀后辅佐刘备建立蜀汉。刘备临终白帝城托孤：「若嗣子可辅则辅之，如其不才君可自取」。他鞠躬尽瘁死而后已——平定南中、七擒孟获；六出祁山北伐中原，最终病逝五丈原军中，年仅五十四岁。杜甫诗云：「出师未捷身先死，长使英雄泪满襟。」是中国历史上智慧与忠诚的至高象征。" },
+  { family:"刘家", name:"刘奭",   title:"汉元帝",      start:-48,  end:-33,  influence:50,
+    bio:"刘奭（前75–前33），汉宣帝刘询之子。少好儒术，为太子时曾劝父亲「宜用儒生」。即位后重用儒臣、广授经学博士弟子——儒学真正成为中国政治的主流意识形态从他开始。但性格柔仁寡断，宠信宦官弘恭、石显，朝政日趋腐败。他的一句「乱我家者太子也」的预言，说的是他立刘骜为太子时的忧虑——后来果然应验。在位期间西汉由盛转衰，故史家有「元成哀平，一代不如一代」之叹。" },
+  { family:"刘家", name:"刘骜",   title:"汉成帝",      start:-33,  end:-7,   influence:45,
+    bio:"刘骜（前51–前7），汉元帝刘奭之子。少年时谨慎好学，即位后却沉溺酒色，宠幸赵飞燕、赵合德姐妹——「燕瘦环肥」中的「燕瘦」即指赵飞燕。朝政先由母后王政君之兄王凤以大司马大将军执掌，此后王氏子弟相继辅政——五位王氏大司马为王莽篡汉铺平了道路。在位二十六年无子而终，西汉皇权从此旁落外戚之手。" },
+  { family:"刘家", name:"刘欣",   title:"汉哀帝",      start:-7,   end:-1,   influence:35,
+    bio:"刘欣（前25–前1），汉元帝庶孙，定陶恭王刘康之子。汉成帝无子，他被立为太子。即位初期颇有振作之志——罢乐府、限民名田、限奴婢数量。但很快沉溺于与董贤的同性恋情之中——「断袖之癖」的典故即出自他：一次午睡董贤压住了他的衣袖，他为不惊醒董贤竟割断了自己的袖子。他甚至说过要把皇位禅让给董贤。在位六年无嗣而终。" },
+  { family:"刘家", name:"刘衎",   title:"汉平帝",      start:-1,   end:6,    influence:25,
+    bio:"刘衎（前9–6），原名刘箕子，汉元帝庶孙，中山孝王刘兴之子。汉哀帝去世后，王莽迎立年仅八岁的刘衎为帝，改元「元始」。王莽以大司马身份独揽大权——他将女儿嫁给这位小皇帝，又毒杀了平帝的舅舅们以防分权。元始五年（6年），十四岁的刘衎中毒身亡——班固《汉书》暗示王莽在腊日进贡的椒酒里下了毒。他是西汉最后一位正式皇帝，他的死让王莽距离篡位只差最后一步。" },
+  { family:"刘家", name:"刘婴",   title:"孺子婴",      start:6,    end:9,    influence:5,
+    bio:"刘婴（5–25），汉宣帝玄孙，广戚侯刘显之子。汉平帝被王莽毒杀后，王莽以「兄弟不得相为后」为由不立年长的宗室，偏选年仅一岁的刘婴为皇太子，号「孺子」。王莽自称「摄皇帝」，代行天子之事。居摄三年（8年），王莽正式篡汉，将五岁的刘婴废为安定公。刘婴从此被软禁，与外世隔绝，成年后「不能名六畜」。更始三年（25年），方望等人拥立刘婴为天子，为更始帝所杀，年仅二十岁。" },
+
+  { family:"刘家", name:"刘裕",   title:"宋武帝",      start:404,  end:422,  influence:90,
+    bio:"刘裕（363–422），字德舆，小名寄奴，彭城人，据称为汉高祖之弟楚元王刘交的二十二世孙。出身寒微，少时以卖履、种田、捕鱼为生。加入北府兵后屡立战功：对内平定桓玄之乱、消灭卢循、刘毅等割据势力；对外北伐灭南燕、后秦，收复洛阳与长安——是东晋南朝三百年间北伐成果最大之人。420年逼晋恭帝禅让，建立刘宋，定都建康。在位期间抑制豪强、轻徭薄赋，开创「元嘉之治」的前奏。辛弃疾赞曰：「想当年，金戈铁马，气吞万里如虎。」" },
+  { family:"刘家", name:"刘义隆", title:"宋文帝",      start:424,  end:453,  influence:70,
+    bio:"刘义隆（407–453），小字车儿，刘裕第三子。即位后继承其父的治国方针，在位三十年。继续推行土断、劝课农桑、减免赋税，开创了南朝最繁荣的「元嘉之治」——《宋书》称「三十年间，氓庶蕃息……盖宋世之极盛也」。但在与北魏太武帝拓跋焘的战争中遭受重创——元嘉二十七年（450年）北伐失败，北魏反攻直抵长江北岸的瓜步，「元嘉草草，封狼居胥，赢得仓皇北顾」成为千古遗憾。后被太子刘劭弑杀——南朝从此再无中兴。" },
+  { family:"刘家", name:"刘义符", title:"宋少帝",      start:422,  end:424,  influence:15,
+    bio:"刘义符（406–424），宋武帝刘裕长子。刘裕临终托孤于徐羡之、傅亮、谢晦、檀道济四位顾命大臣。即位后年少贪玩，「于华林园为列肆，亲自酤卖」，不理朝政。424年，四位顾命大臣以皇太后名义废其为营阳王，旋即被杀，年仅十八岁。他是刘宋第一个被废杀的皇帝，开启了南朝皇室自相残杀的序幕。" },
+  { family:"刘家", name:"刘骏",   title:"宋孝武帝",    start:453,  end:464,  influence:30,
+    bio:"刘骏（430–464），宋文帝刘义隆第三子。太子刘劭弑父篡位后，刘骏从江陵起兵讨逆，三个月内攻入建康杀刘劭及其四子，即位为帝。在位期间平定宗室叛乱、推行土断，但他猜忌残忍、淫乱后宫——「闺庭无礼」为南朝帝王之首。464年病逝，年仅三十四岁。其子前废帝刘子业继位后暴虐更甚，刘宋由此速衰。" },
+  { family:"刘家", name:"刘彧",   title:"宋明帝",      start:465,  end:472,  influence:25,
+    bio:"刘彧（439–472），宋文帝刘义隆第十一子。前废帝刘子业被杀后即位。在位期间爆发「义嘉之乱」——晋安王刘子勋在寻阳称帝，全国绝大部分州郡响应，刘彧仅剩建康一座孤城。但他在萧道成等将领的支持下，竟奇迹般反败为胜。然而他屠尽孝武帝诸子，晚年猜忌残暴，「奢费过度，务为雕侈」。472年病逝后，其子刘昱即位，刘宋已不可救药。" },
+  { family:"刘家", name:"刘准",   title:"宋顺帝",      start:477,  end:479,  influence:10,
+    bio:"刘准（467–479），宋明帝刘彧第三子。刘昱被萧道成派人刺杀后，年仅十岁的刘准被萧道成立为傀儡皇帝。在位仅两年，萧道成便逼迫他禅让。禅位之日，刘准躲在宫中佛盖下不肯出殿，被拉出时哭着问「愿后身世世勿复生帝王家」——这句千古悲叹道尽了亡国之君的绝望。逊位后被封为汝阴王，一个月后被杀，年仅十二岁。刘宋亡。" },
+
+  { family:"司马家", name:"司马衷",title:"晋惠帝",      start:290,  end:306,  influence:35,
+    bio:"司马衷（259–306），字正度，晋武帝司马炎次子。九岁被立为太子，但智力低下——这便是著名的「白痴皇帝」。天下饥荒时大臣报告百姓没有饭吃，他反问「何不食肉糜？」成为千古笑谈。即位后由外戚杨骏辅政，次年皇后贾南风发动政变杀死杨骏，随后又引发了宗室诸王互相残杀——「八王之乱」从291年持续到306年，西晋的精锐部队在这场内斗中消耗殆尽、五胡趁虚而入。司马衷本人也在这场混乱中被毒杀。" },
+  { family:"司马家", name:"司马睿",title:"晋元帝",      start:317,  end:323,  influence:60,
+    bio:"司马睿（276–323），字景文，司马懿曾孙，琅琊王司马觐之子。八王之乱后中原沦丧，他南渡建康（今南京），在王导、王敦兄弟的全力扶持下建立东晋——「王与马，共天下」便是形容当时王导王敦与司马睿共享政权的格局。317年在建康称帝，延续晋祚。但「共天下」的另一面是他处处受制于王氏：王敦以「清君侧」为名起兵攻入建康，司马睿忧愤成疾，在位六年便郁郁而终。" },
+  { family:"司马家", name:"司马炽",title:"晋怀帝",      start:306,  end:313,  influence:15,
+    bio:"司马炽（284–313），晋武帝司马炎第二十五子。晋惠帝死后被东海王司马越拥立为帝。在位期间「八王之乱」余波未平，匈奴刘渊建立的汉赵政权已攻入中原。311年洛阳陷落——「永嘉之乱」，司马炽被刘聪俘虏至平阳。刘聪让他穿着青衣在宴会上行酒，晋旧臣悲愤痛哭。313年被刘聪以毒酒鸩杀，年仅二十九岁。" },
+  { family:"司马家", name:"司马邺",title:"晋愍帝",      start:313,  end:317,  influence:10,
+    bio:"司马邺（300–317），晋武帝司马炎之孙，吴孝王司马晏之子。怀帝被俘后，在长安被拥立为帝。但此时长安残破——「户不满百，墙宇颓毁，蒿棘成林」。316年，汉赵将领刘曜围困长安，城中粮尽，司马邺肉袒出降。被送往平阳后，刘聪对他极尽羞辱——打猎时让他执戟前导。317年被杀，年仅十七岁。西晋至此灭亡。" },
+  { family:"司马家", name:"司马绍",title:"晋明帝",      start:323,  end:325,  influence:25,
+    bio:"司马绍（299–325），晋元帝司马睿长子。聪慧明敏，为元帝所爱。即位后面对王敦之乱的余波——王敦虽已病死，但其党羽仍在。他果断平定了王敦余党，稳定东晋政局。但天不假年，在位仅两年多便病逝，年仅二十六岁。临终遗诏托孤于王导、庾亮等人。" },
+  { family:"司马家", name:"司马衍",title:"晋成帝",      start:325,  end:342,  influence:20,
+    bio:"司马衍（321–342），晋明帝司马绍长子。四岁即位，由母亲庾太后临朝称制，舅舅庾亮执掌朝政。在位期间爆发苏峻之乱——历阳内史苏峻因不满庾亮削其兵权而起兵，攻入建康，成帝一度被俘。乱平后庾亮引咎出镇，王导重新执政。342年病逝，年仅二十一岁。" },
+  { family:"司马家", name:"司马岳",title:"晋康帝",      start:342,  end:344,  influence:10,
+    bio:"司马岳（322–344），晋成帝司马衍同母弟。成帝无子，临终遗诏传位于他。在位仅两年，庾冰、何充辅政。344年病逝，年仅二十二岁。临终前何充力劝他传位于年仅一岁的太子司马聃——庾冰反对未果。这一决定让褚太后得以临朝，也埋下了日后政治斗争的伏笔。" },
+  { family:"司马家", name:"司马聃",title:"晋穆帝",      start:344,  end:361,  influence:10,
+    bio:"司马聃（343–361），晋康帝司马岳之子。一岁即位，由母亲褚太后临朝称制。在位期间正值东晋中期相对稳定——桓温灭成汉、殷浩北伐（虽屡败）、永和年间文风鼎盛（王羲之《兰亭序》即作于永和九年）。但他始终是个象征性的皇帝，实权先后由褚太后、桓温等人掌控。361年病逝，年仅十八岁。" },
+  { family:"司马家", name:"司马丕",title:"晋哀帝",      start:361,  end:365,  influence:5,
+    bio:"司马丕（341–365），晋成帝司马衍长子。穆帝无子，褚太后迎立他为帝。即位后迷信方士、断谷服丹药以求长生——结果中毒不能理政，褚太后再度临朝摄政。365年因丹药中毒身亡，年仅二十四岁。他是东晋诸帝中第一个死于丹药的皇帝，此后服丹药求仙的风气在东晋皇室中蔓延。" },
+  { family:"司马家", name:"司马奕",title:"海西公",      start:365,  end:371,  influence:5,
+    bio:"司马奕（342–386），晋成帝司马衍次子。哀帝死后被褚太后迎立为帝。在位六年无所作为，朝政全由权臣桓温掌控——「政由桓氏，祭则寡人」。371年，桓温诬陷其有「痿疾」不能人道，废为海西县公。此后在吴县软禁十五年——因怕被桓温暗杀，终日「耽酒昏酣」，以此苟全性命。386年善终于吴县，是东晋废帝中结局最好的一位。" },
+  { family:"司马家", name:"司马昱",title:"晋简文帝",    start:371,  end:372,  influence:10,
+    bio:"司马昱（320–372），晋元帝司马睿幼子。桓温废司马奕后，以为五十岁的司马昱性格柔弱易控，便立其为帝。但司马昱并非傀儡——即位后以清谈应对桓温的步步紧逼，拒绝封桓温为「周公」或「摄政」。桓温对他施压，他忧惧成疾，在位仅八个月便病逝。临终写下「少康、光武」四字欲传位于桓温，被王坦之撕毁——这是东晋士族抵制桓温篡位的最后防线。" },
+  { family:"司马家", name:"司马曜",title:"晋孝武帝",    start:372,  end:396,  influence:30,
+    bio:"司马曜（362–396），晋简文帝司马昱第六子。十岁即位。淝水之战（383年）正是在他治下——谢安以八万北府兵大破前秦苻坚的八十余万大军，保全了江南。但战后他宠信其弟司马道子——司马道子执掌朝政后腐败无能、沉溺酒色。司马曜本人也因一句酒后戏言——对张贵人说「汝以年亦当废矣」——被张贵人叫来宫女用被子闷死，年仅三十四岁。史上最荒谬的皇帝死法之一。" },
+  { family:"司马家", name:"司马德宗",title:"晋安帝",    start:396,  end:418,  influence:10,
+    bio:"司马德宗（382–418），晋孝武帝司马曜长子。自幼「不慧」——据《晋书》记载，他甚至连冷暖饥饱都不知道，是历史上少有的智力障碍皇帝。在位二十二年完全是一个符号——朝政先由司马道子、司马元显父子掌控，后落入桓玄之手（桓玄篡位建立「桓楚」数月）。刘裕消灭桓玄后迎其复位，但实权全归刘裕。418年被刘裕派人勒死，年仅三十六岁。" },
+  { family:"司马家", name:"司马德文",title:"晋恭帝",    start:418,  end:420,  influence:10,
+    bio:"司马德文（386–421），晋孝武帝司马曜次子。刘裕杀安帝后立其为帝。在位期间完全是一个等待禅让的傀儡——刘裕的篡位已经是公开的秘密。420年，刘裕派傅亮逼其禅位。禅位诏书由他亲笔抄写——「桓玄之时天命已改，重为刘公所延，将二十载。今日之事，本所甘心。」逊位后封为零陵王。次年刘裕派人以棉被闷杀——开创了后世篡位者杀前朝末帝的先例。东晋亡。" },
+
+  // ═══ 桓家 — Huan clan ═══
+  { family:"桓家", name:"桓温",   title:"大司马",      start:345,  end:373,  influence:75,
+    bio:"桓温（312–373），字元子，谯国龙亢人，东晋权臣。姿貌甚伟，娶晋明帝之女南康公主为妻。347年率军溯长江而上灭成汉，名声大振。此后三次北伐——354年伐前秦直抵灞上、356年收复洛阳、369年伐前燕打到枋头——惜均因粮运不继而退。他废黜晋废帝司马奕，改立简文帝，权倾朝野。晚年曾试探「禅让」被谢安等以拖延策略化解。他的一句「既不能流芳后世，不足复遗臭万载邪」道尽了他复杂的人格。" },
+  { family:"桓家", name:"桓玄",   title:"楚帝",        start:402,  end:404,  influence:50,
+    bio:"桓玄（369–404），字敬道，桓温幼子。幼年时父亲桓温已去世，他常感叹「父为九州伯，儿为五湖长」。凭借父亲的余荫逐步掌控荆州、江州军政大权。402年举兵攻入建康，杀权臣司马道子、司马元显父子，自封楚王。403年底逼迫晋安帝禅让，建立「桓楚」政权。但他称帝后「骄奢荒侈」、政令无常，仅三个月便被刘裕率领的北府兵推翻，兵败被杀——桓氏一门从此覆灭。" },
+
+  // ═══ 谢家 — Xie clan ═══
+  { family:"谢家", name:"谢安",   title:"太傅/宰相",   start:360,  end:385,  influence:85,
+    bio:"谢安（320–385），字安石，陈郡阳夏人。少以清谈知名，隐居会稽东山，「东山再起」即指他四十余岁始出仕。淝水之战（383年）中，他以八万北府兵大败前秦苻坚的八十余万大军——当捷报传来时他正在下棋，看了一眼便淡淡地说「小儿辈遂已破贼」，继续下棋，但起身时木屐齿折断竟未察觉。此战保全了华夏衣冠文明，使江南免遭五胡蹂躏。他是东晋第一名士也是第一能臣，李白诗云：「但用东山谢安石，为君谈笑静胡沙。」" },
+  { family:"谢家", name:"谢玄",   title:"车骑将军",    start:377,  end:388,  influence:65,
+    bio:"谢玄（343–388），字幼度，谢安之侄。谢安举荐他组建「北府兵」——这支由北方流民精锐组成的军队成为东晋最精锐的武装力量。淝水之战中谢玄以前锋都督身份率领北府兵渡淝水突袭前秦军阵，秦军稍退即全军崩溃，苻坚负伤逃走。战后乘胜北伐收复徐、兖、青、豫等州大片土地。可惜天不假年，四十五岁便病逝——北府兵这支劲旅后来落入刘裕之手，成为改朝换代的工具。" },
+
+  // ═══ 萧家 — Xiao clan ═══
+  { family:"萧家", name:"萧道成", title:"齐高帝",      start:479,  end:482,  influence:65,
+    bio:"萧道成（427–482），字绍伯，小名斗将，南兰陵人，自称西汉丞相萧何的二十四世孙。刘宋末年以内战中崛起，平定桂阳王刘休范之乱，逐步掌控禁军，最终逼宋顺帝禅让——479年建立南齐。在位期间提倡节俭、以身作则：他常说「使我治天下十年，当使黄金与土同价」。可惜在位仅三年便病逝。临终遗言嘱咐太子「宋氏若不骨肉相图，他族岂得乘其衰弊」——但南齐皇室骨肉相残比刘宋有过之而无不及。" },
+  { family:"萧家", name:"萧衍",   title:"梁武帝",      start:502,  end:549,  influence:75,
+    bio:"萧衍（464–549），字叔达，南兰陵人，萧道成的族弟。原为南齐雍州刺史，趁南齐内乱起兵——502年逼齐和帝禅让，建立南梁。在位四十八年是南朝在位最长的皇帝。前期勤政爱民、文化昌盛——他自己是虔诚的佛教徒，「南朝四百八十寺」大半建于此时。但晚年四次舍身出家同泰寺，每次都由大臣用亿万钱「赎」回；又极度纵容宗室贵族，导致政治腐败。侯景之乱（548年）爆发，八十五岁的他被叛军围困台城，饿死在净居殿——晚年凄凉令人唏嘘。" },
+  { family:"萧家", name:"萧赜",   title:"齐武帝",      start:482,  end:493,  influence:35,
+    bio:"萧赜（440–493），字宣远，齐高帝萧道成长子。即位后继承父亲政策，整顿户籍继续推行「检籍」、减免赋税、劝课农桑，社会相对稳定繁荣。在位十一年间与北魏通好，边境安宁。史称「永明之治」。但他晚年猜忌宗室，太子萧长懋病逝后又犹豫不决——最终传位于太孙萧昭业，为南齐内乱埋下了祸根。" },
+  { family:"萧家", name:"萧昭业", title:"郁林王",      start:493,  end:494,  influence:5,
+    bio:"萧昭业（473–494），字元尚，齐武帝萧赜之孙，文惠太子萧长懋之子。即位前伪装节俭仁孝博得武帝欢心，即位后原形毕露——斗鸡走马、沉溺酒色、挥霍无度（武帝积累的八万万库钱不到一年便花去大半）。在位仅一年便被萧鸾发动政变废杀，年仅二十一岁。萧鸾将他降封为郁林王，是南齐第一个被废杀的皇帝。" },
+  { family:"萧家", name:"萧鸾",   title:"齐明帝",      start:494,  end:498,  influence:20,
+    bio:"萧鸾（452–498），字景栖，齐高帝萧道成之侄。杀郁林王萧昭业后立萧昭文为帝，旋即废杀，自立为帝。他是南朝最残暴的皇帝之一——窃位后大杀高帝和武帝的子孙以巩固自己的皇位（史载「高武子孙杀之殆尽」）。在位期间猜忌宗室、依赖典签监视诸王，南齐皇室自相残杀至此达到顶峰。498年病逝，太子萧宝卷继位。" },
+  { family:"萧家", name:"萧宝卷", title:"东昏侯",      start:498,  end:501,  influence:10,
+    bio:"萧宝卷（483–501），字智藏，齐明帝萧鸾次子。即位后昏庸残暴——杀死多位顾命大臣、随意出宫游荡骚扰百姓（「置射雉场二百九十六处」）、宠爱潘贵妃令凿金莲花铺地。剪除宗室、排斥功臣，导致雍州刺史萧衍起兵。501年萧衍攻入建康，萧宝卷被部下所杀，年仅十八岁。萧衍贬其为东昏侯——南齐至此已只剩下最后一口气。" },
+
+  // ═══ 陈家 — Chen clan ═══
+  { family:"陈家", name:"陈霸先", title:"陈武帝",      start:557,  end:559,  influence:55,
+    bio:"陈霸先（503–559），字兴国，吴兴长城人，出身寒微。侯景之乱后南方大乱，他在岭南起兵勤王，一路北上与王僧辩联手平定侯景。后又击败北齐的入侵、除掉政敌王僧辩——557年逼梁敬帝禅让，建立陈朝。他是中国历史上唯一一位以自己姓氏为国号的皇帝。在位仅两年便病逝，但他建立的陈朝在南方最危险的时刻稳住了局面——虽然疆域是南朝四代中最小的，却顽强地延续了三十二年。" },
+
+  // ═══ 高家(北齐) — Gao clan ═══
+  { family:"高家", name:"高欢",   title:"大丞相/神武帝",start:531,  end:547,  influence:70,
+    bio:"高欢（496–547），字贺六浑，渤海蓨人，鲜卑化的汉人。六镇起义后投奔尔朱荣，后趁尔朱氏内乱起兵独立。击败尔朱氏后拥立北魏孝武帝，控制朝政。孝武帝不甘做傀儡逃往关中投奔宇文泰，高欢另立孝静帝，迁都邺城——北魏从此分裂为东魏和西魏。他驻晋阳遥控邺城朝政，「霸府政治」由此确立。与宇文泰的五次大战（小关、沙苑、河桥、邙山、玉壁）互有胜负。临终前嘱咐儿子高澄「邙山之战不用陈元康言，留此患以遗汝」，指的便是侯景——果然他一死侯景便叛乱了。" },
+  { family:"高家", name:"高洋",   title:"齐文宣帝",    start:550,  end:559,  influence:55,
+    bio:"高洋（526–559），字子进，高欢次子。父亲和兄长高澄先后去世后继承权位。550年逼东魏孝静帝禅让，建立北齐。前期励精图治——修筑长城、改革官制、攻打突厥和契丹、南征梁朝，北齐国力达到巅峰，被称为「英雄天子」。但后期酗酒成性、喜怒无常，常赤身裸体在皇宫里游荡，又嗜杀成癖——酗酒纵欲使他在三十二岁便暴毙。北齐皇室的荒淫残暴在中国历史上臭名昭著。" },
+  { family:"高家", name:"高澄",   title:"渤海王",      start:547,  end:549,  influence:40,
+    bio:"高澄（521–549），字子惠，高欢长子。自幼聪慧过人，十五岁便入邺城辅政。父亲高欢死后继承其位，以大将军身份掌控东魏朝政。他整顿吏治、改革选举制度、编纂《麟趾格》法典——是北齐制度的主要奠基人。正当他准备逼东魏孝静帝禅让时，却在549年被自己的厨奴兰京刺杀身亡，年仅二十八岁。其弟高洋继承了篡位的计划。" },
+  { family:"高家", name:"高演",   title:"齐孝昭帝",    start:560,  end:561,  influence:15,
+    bio:"高演（535–561），字延安，高欢第六子。高洋死后其子高殷即位，高演在母亲娄太后的支持下发动政变——废杀高殷，自立为帝。在位虽仅一年有余，但他勤于政事、轻徭薄赋，北齐面貌稍有改观。临终前他深感愧疚杀侄之事，遗诏传位于弟弟高湛而非儿子——以求保全自己的儿子。但高湛即位后依然将其子杀害。" },
+  { family:"高家", name:"高湛",   title:"齐武成帝",    start:561,  end:565,  influence:20,
+    bio:"高湛（537–568），高欢第九子。兄高演传位于他，但即位后便杀了高演的太子。在位五年宠信奸佞和士开——「和士开说曰：自古帝王，尽为灰土，尧舜桀纣竟复何异。陛下宜及少壮恣意作乐」。他沉迷酒色、不理朝政，北齐迅速腐化。565年，彗星出现，他为「应天变」传位于年仅九岁的太子高纬——自己做太上皇继续享乐。568年病逝。" },
+  { family:"高家", name:"高纬",   title:"齐后主",      start:565,  end:577,  influence:15,
+    bio:"高纬（556–577），字仁纲，高湛之子。即位后比父亲更加荒唐——宠信乳母陆令萱及其子穆提婆、奸臣和士开。他喜欢在宫中扮演乞丐、建「贫儿村」自娱。军事上听信谗言杀害名将斛律光、废黜兰陵王高长恭——自毁长城。577年北周武帝宇文邕灭北齐，高纬被俘至长安。不久被宇文邕以谋反为名处死，年仅二十一岁。北齐亡。" },
+
+  // ═══ 宇文家(北周) — Yuwen clan ═══
+  { family:"宇文家", name:"宇文泰",title:"大丞相/文帝",start:535,  end:556,  influence:75,
+    bio:"宇文泰（507–556），字黑獭，代郡武川人，鲜卑族。六镇起义后随父加入起义军，后归附尔朱荣部将贺拔岳。贺拔岳死后他被推举为领袖，占据关中。北魏孝武帝从高欢处逃来关中后，宇文泰以长安为都建立西魏，实际控制朝政。他创立府兵制——八柱国十二大将军的军事体系，将鲜卑军事贵族与汉族豪强整合为一体，深刻影响了此后三百年的军事制度。苏绰为他起草的「六条诏书」成为西魏北周的治国纲领。虽然在与高欢的战争中多数处于守势，但他为北周统一北方奠定了制度基础。" },
+  { family:"宇文家", name:"宇文觉",title:"孝闵帝",      start:557,  end:557,  influence:10,
+    bio:"宇文觉（542–557），字陀罗尼，宇文泰第三子。宇文泰临终托孤于侄子宇文护。557年，宇文护逼迫西魏恭帝拓跋廓禅让，立宇文觉为帝，建立北周。但宇文觉年仅十五岁，不满宇文护专权，与亲信密谋除掉宇文护。计划泄露，宇文护废其为略阳公，一个月后将其杀害——北周第一位皇帝在位仅九个月便死于权臣之手。" },
+  { family:"宇文家", name:"宇文毓",title:"周明帝",      start:557,  end:560,  influence:20,
+    bio:"宇文毓（534–560），小名统万突，宇文泰庶长子。宇文护废杀宇文觉后立他为帝。他聪慧有胆识，表面上顺从宇文护，暗中逐步收回权力。宇文护察觉后心中不安——560年，他指使膳部中大夫李安在宇文毓的糖饼中下毒。宇文毓临终前口授遗诏传位于弟弟宇文邕而非自己的儿子，希望宇文邕能对抗宇文护。这一临终决断为北周的崛起保留了火种。" },
+  { family:"宇文家", name:"宇文邕",title:"周武帝",      start:560,  end:578,  influence:65,
+    bio:"宇文邕（543–578），字祢罗突，宇文泰第四子。北周初年，权臣宇文护连杀三帝，宇文邕即位后「深自晦匿」——表面上对宇文护言听计从，韬光养晦十二年。572年趁宇文护入宫时亲手用玉珽将其击倒，随后诛杀宇文护及其党羽，终于收归皇权。亲政后推行灭佛——「三武一宗」灭佛的第二位——没收寺院土地财产充实国力。577年发兵灭北齐，统一了北方。可惜天不假年，578年在北伐突厥途中病逝，年仅三十五岁——他若再多活十年，统一天下的很可能不是杨坚。" },
+  { family:"宇文家", name:"宇文赟",title:"周宣帝",      start:578,  end:579,  influence:10,
+    bio:"宇文赟（559–580），字乾伯，宇文邕长子。即位后立即展露本性——沉溺酒色、大兴土木、立五位皇后并立（史无前例的「五后并立」）。为专心享乐，579年仅二十岁的他便禅位于年仅六岁的儿子宇文阐，自封「天元皇帝」。过度纵欲使他在580年暴卒，年仅二十一岁。他的荒唐无度让宇文邕苦心经营的强盛局面迅速崩解——也给了岳父杨坚篡位的绝佳机会。" },
+  { family:"宇文家", name:"宇文阐",title:"周静帝",      start:579,  end:581,  influence:5,
+    bio:"宇文阐（573–581），原名宇文衍，宇文赟长子。五岁即位，由其外公杨坚以大丞相身份辅政。杨坚迅速铲除了反对势力——尉迟迥、司马消难等起兵讨伐杨坚均被平定。581年，年仅八岁的宇文阐被迫禅位于杨坚。杨坚封其为介国公。三个月后，杨坚派人将其暗杀——「介国公薨，时年九岁」。北周亡，隋朝建立。" },
+
+  // ═══ 杨家(弘农杨氏) — Yang clan ═══
+  { family:"杨家", name:"杨坚",   title:"隋文帝",      start:581,  end:604,  influence:95,
+    bio:"杨坚（541–604），弘农华阴人，北周大贵族。其女杨丽华为北周宣帝皇后，他以国丈身份掌控朝政。580年宣帝暴崩，静帝年幼，杨坚以「大丞相」身份总揽军政大权——很快便铲除了尉迟迥、司马消难等反对势力。581年逼北周静帝禅让，建立隋朝。589年派杨广为元帅、高颎为实际指挥，五十一万大军渡江灭陈，结束了自西晋末年以来近三百年的分裂局面。在位期间推行三省六部制、废除九品中正制开创科举、颁布《开皇律》——这些制度被唐朝继承并影响后世千年。但在晚年猜忌苛察，废太子杨勇、改立杨广。604年病重时传闻被杨广弑杀——「仁寿宫变」至今是历史悬案。" },
+  { family:"杨家", name:"杨广",   title:"隋炀帝",      start:604,  end:618,  influence:80,
+    bio:"杨广（569–618），一名英，隋文帝杨坚次子。早年伪装节俭仁孝博得父母欢心，取代兄长杨勇成为太子。即位后展现出惊人的雄心与才能：营建东都洛阳、开凿大运河连通南北、三征高句丽——每一项都是千古功业。大运河至今惠泽中国，但短时间内同时推进这些超级工程，导致民力耗尽——「天下死于役」。三次征讨高句丽伤亡数十万，民变四起。618年在江都被禁军将领宇文化及所杀——隋朝二世而亡，与秦朝如出一辙。他的功业与罪过同样巨大，是秦始皇之后最具争议的帝王之一。" },
+  { family:"杨家", name:"杨国忠", title:"右相",        start:750,  end:756,  influence:45,
+    bio:"杨国忠（？–756），本名杨钊，蒲州永乐人，杨贵妃的堂兄——但两人并非近亲。他出身市井无赖，因杨贵妃得宠而发迹。善于逢迎李隆基，从一介小官迅速升至宰相，身兼四十余职。在位期间专权跋扈、排斥异己，与安禄山争权——正是杨国忠的屡次逼迫促使安禄山提前起兵。安史之乱爆发后随李隆基逃往四川，在马嵬坡被哗变的禁军将士乱刀砍死——士兵们认为他是导致天下大乱的罪魁祸首。他的死是大唐由盛转衰的一个血淋淋的注脚。" },
+
+  // ═══ 李家(陇西李氏) — Tang Li clan ═══
+  { family:"李家", name:"李渊",   title:"唐高祖",      start:618,  end:626,  influence:75,
+    bio:"李渊（566–635），字叔德，陇西成纪人，自称西凉武昭王李暠后裔。隋朝末年任太原留守，天下大乱后在次子李世民的反复劝说下于617年起兵。他采取「卑辞厚礼」结好突厥以稳定后方，然后直取关中，攻占长安后立隋炀帝之孙杨侑为傀儡皇帝。618年隋炀帝死后逼杨侑禅让，建立唐朝。此后数年间次子李世民率军平定各路割据势力。626年玄武门之变后禅位于李世民，自己做太上皇。他是唐朝的开国之君，但功业与光芒完全被儿子李世民盖过。" },
+  { family:"李家", name:"李世民", title:"唐太宗",      start:626,  end:649,  influence:100,
+    bio:"李世民（598–649），唐高祖李渊次子。少年从军，十八岁随父起兵，在唐朝统一战争中亲自指挥了四次决定性战役——浅水原破薛举、柏壁败刘武周、虎牢关擒窦建德、洛阳降王世充——军功赫赫。626年发动玄武门之变，射杀太子建成和齐王元吉，逼迫李渊禅让。即位后励精图治：虚心纳谏、任人唯贤、轻徭薄赋、开疆拓土——灭东突厥、平吐谷浑、征高昌、设安西四镇。史称「贞观之治」。少数民族尊其为「天可汗」。是中国历史上最伟大的帝王之一。" },
+  { family:"李家", name:"李治",   title:"唐高宗",      start:649,  end:683,  influence:60,
+    bio:"李治（628–683），字为善，唐太宗李世民第九子。即位后继承贞观遗风，在舅舅长孙无忌和褚遂良的辅佐下，唐朝国力持续发展——史称「永徽之治」。他最重要的功绩是完成了太宗未竟的事业：657年苏定方灭西突厥、660年灭百济、668年李勣灭高句丽——唐朝疆域在他治下达到极盛。但他从660年起因病让武则天协助处理朝政，从此「二圣临朝」——皇权事实上已开始转移。683年病逝于洛阳贞观殿。" },
+  { family:"李家", name:"李显",   title:"唐中宗(初立)",start:683,  end:684,  influence:15,
+    bio:"李显（656–710），唐高宗李治第七子，武则天所生。683年高宗驾崩后即位，但实权全由母亲武则天以皇太后身份掌控。即位仅两个月，便因欲提拔岳父韦玄贞为侍中触怒武则天，被废为庐陵王，流放均州、房州长达十四年。在流放期间「每闻制使至，辄惶恐欲自杀」——在母亲的阴影下战战兢兢地活着。直到705年神龙政变才被迎回长安复位。" },
+  { family:"李家", name:"李旦",   title:"唐睿宗(初立)",start:684,  end:690,  influence:15,
+    bio:"李旦（662–716），唐高宗李治第八子，武则天所生。兄长李显被废后继位为帝。但在位期间完全是个傀儡——居于别殿不得预闻政事，朝政全由武则天以太后身份独揽。690年，武则天正式称帝改国号为「周」，降李旦为皇嗣。他从皇帝变为「准太子」——在母亲的绝对权力面前，他选择隐忍不发。这一忍就是十五年。正是这份隐忍让他活过了武则天时代，也为李家复辟保留了血脉。" },
+  { family:"李家", name:"李显",   title:"唐中宗(复位)",start:705,  end:710,  influence:25,
+    bio:"李显（656–710），神龙元年（705年）正月，张柬之等五位大臣发动政变逼武则天退位，迎李显复位，复国号为「唐」。在位期间宠信皇后韦氏——韦后效仿武则天干预朝政，与武三思勾结专权。太子李重俊起兵杀武三思后兵败被杀，朝政更加混乱。710年，李显突然驾崩——据传是被韦后与女儿安乐公主合谋毒死（将毒药置于饼中）。五十五天的混乱后，李隆基发动政变铲除韦氏集团。" },
+  { family:"李家", name:"李旦",   title:"唐睿宗(复位)",start:710,  end:712,  influence:15,
+    bio:"李旦（662–716），710年李隆基与太平公主联手铲除韦后集团后，迎立李旦复位。在位期间面临儿子李隆基（太子）与妹妹太平公主之间的权力斗争——太平公主权倾朝野，「宰相七人，五出其门」。712年，李旦禅位于李隆基，但仍掌握三品以上官员的任免权——这种「太上皇干政」的局面直到713年李隆基发动先天政变诛杀太平公主后才结束。" },
+  { family:"李家", name:"李隆基", title:"唐玄宗",      start:712,  end:756,  influence:85,
+    bio:"李隆基（685–762），唐睿宗李旦第三子。少年经历武则天改唐为周的动荡年代。710年与太平公主联手发动唐隆政变铲除韦后集团，拥立父亲复位。712年接受父亲禅让即位。在位前三十年励精图治、任用姚崇宋璟等贤相，开创了「开元盛世」——长安成为当时世界最大的国际都市。但后期沉迷于杨贵妃的温柔乡、宠信李林甫杨国忠等奸相，最终酿成安史之乱（755–763年）——大唐从巅峰坠入深渊。白居易《长恨歌》写尽了他与杨贵妃的悲剧：「天长地久有时尽，此恨绵绵无绝期。」" },
+  { family:"李家", name:"李亨",   title:"唐肃宗",      start:756,  end:762,  influence:45,
+    bio:"李亨（711–762），唐玄宗李隆基第三子。安史之乱爆发后随玄宗逃往四川，行至马嵬坡发生兵变——杨国忠被杀、杨贵妃被缢死。兵变后李亨与父亲分道扬镳——北上灵武自立为帝，遥尊玄宗为太上皇。在位期间以郭子仪、李光弼为将，借回纥骑兵收复长安、洛阳两京。但他宠信宦官李辅国和皇后张良娣——宦官专权从肃宗朝开始加剧。762年玄宗与肃宗父子相隔仅十三日相继驾崩——千古疑案。" },
+  { family:"李家", name:"李豫",   title:"唐代宗",      start:762,  end:779,  influence:50,
+    bio:"李豫（727–779），原名李俶，唐肃宗李亨长子。安史之乱期间随父亲在灵武即位，被任命为天下兵马元帅——名义上统率唐军与回纥联军收复长安、洛阳两京。762年肃宗病逝，他在宦官李辅国拥立下即位。在位期间安史之乱终于平定（763年），但唐朝已元气大伤——藩镇割据从此成为顽疾。他试图改革税制、削弱宦官势力，但成效有限。在位十七年病逝，唐朝进入了藩镇林立、宦官专权的漫长衰退期。" },
+  { family:"李家", name:"李适",   title:"唐德宗",      start:779,  end:805,  influence:40,
+    bio:"李适（742–805），唐代宗李豫长子。即位初期有中兴之志——罢黜宦官、减省进奉、用杨炎推行「两税法」取代租庸调制。但781年「四镇之乱」爆发，781–786年间成德、魏博、淄青、淮西等藩镇相继反叛——他被迫下「罪己诏」。此后对藩镇转为姑息，重新信任宦官——设神策军中尉由宦官统领，禁军从此归宦官掌握。晚年猜忌——听信谗言贬斥贤相陆贽。805年病逝，在位二十六年。" },
+  { family:"李家", name:"李诵",   title:"唐顺宗",      start:805,  end:805,  influence:15,
+    bio:"李诵（761–806），唐德宗李适长子。即位时已中风失语——在位仅八个月（实际仅186天）。他重用王叔文、王伾、柳宗元、刘禹锡等改革派推行「永贞革新」——打击宦官、抑制藩镇。但改革触动了宦官和保守派的核心利益，宦官俱文珍等拥立其子李纯为太子，逼迫李诵退位为太上皇。次年病逝——或传被宦官所害。柳宗元刘禹锡等「二王八司马」被贬——永贞革新成为昙花一现的改革失败案例。" },
+  { family:"李家", name:"李纯",   title:"唐宪宗",      start:805,  end:820,  influence:50,
+    bio:"李纯（778–820），唐顺宗李诵长子。即位后励精图治——以「元和」著称的十五年里，先后平定西川刘辟、镇海李锜、淮西吴元济、淄青李师道等藩镇，「自广德以来垂六十年，藩镇跋扈河南北三十余州，自除官吏不供贡赋，至是尽遵朝廷约束」——史称「元和中兴」。但晚年骄奢、宠信宦官、服丹药求仙——820年暴卒于大明宫中和殿，年仅四十二岁。他的死因与他祖父德宗、父亲顺宗一样笼罩着宦官的阴影。" },
+  { family:"李家", name:"李恒",   title:"唐穆宗",      start:820,  end:824,  influence:15,
+    bio:"李恒（795–824），唐宪宗李纯第三子。宦官梁守谦等拥立他即位。在位期间沉溺游宴、击鞠、歌舞——「宴乐过多，畋游无度」。河北三镇（卢龙、成德、魏博）相继复叛，元和中兴的成果一朝化为乌有。824年服丹药中毒——瘫痪在床不能言语，不久驾崩，年仅二十九岁。唐朝从穆宗朝起，国势急转直下。" },
+  { family:"李家", name:"李湛",   title:"唐敬宗",      start:824,  end:826,  influence:10,
+    bio:"李湛（809–826），唐穆宗李恒长子。十五岁即位，贪玩任性——喜欢打马球、深夜捉狐狸（「打夜狐」）。不理朝政，宦官王守澄与宰相李逢吉勾结把持朝政。826年，他与宦官刘克明等人饮酒至深夜——醉酒后被刘克明等人杀死于更衣室，年仅十七岁。他是唐朝第一位被宦官弑杀的皇帝，证明了宦官已从皇帝的奴仆变成了皇帝命运的主宰者。" },
+  { family:"李家", name:"李昂",   title:"唐文宗",      start:826,  end:840,  influence:25,
+    bio:"李昂（809–840），唐穆宗李恒次子，李湛之弟。宦官王守澄等拥立他即位。他在位期间勤于政事、厉行节俭——放出宫女三千余人、裁撤冗官一千二百余人。但他最大的心结是宦官专权——835年他与宰相李训、郑注密谋发动「甘露之变」诛杀宦官。计划失败，宦官仇士良率神策军反扑——宰相以下朝官被屠杀千余人。自此「天下事皆决于北司（宦官），宰相行文书而已」。840年抑郁而终，年仅三十一岁。" },
+  { family:"李家", name:"李炎",   title:"唐武宗",      start:840,  end:846,  influence:35,
+    bio:"李炎（814–846），唐穆宗李恒第五子，文宗之弟。宦官仇士良等拥立他即位。在位期间最重要的举措是「会昌灭佛」（845年）——拆毁寺院四千六百余所、还俗僧尼二十六万余人、没收寺院良田数千万顷——「三武一宗」灭佛的第三次。同时他重用李德裕为宰相，平定泽潞刘稹之叛、击退回鹘乌介可汗的侵扰，使日渐衰微的唐朝出现了短暂的回光返照——史称「会昌中兴」。但846年服丹药中毒身亡，年仅三十二岁。" },
+  { family:"李家", name:"李忱",   title:"唐宣宗",      start:846,  end:859,  influence:45,
+    bio:"李忱（810–859），唐宪宗李纯第十三子，武宗之叔。武宗死后宦官马元贽以为他「不慧」（痴呆）易于控制，便立他为帝。即位后一改往日装疯卖傻的形象——勤于政事、严惩奸佞、抑制宦官。他恢复了被武宗摧毁的佛教寺庙，但政治上继承了会昌年间的良好吏治。在位期间吐蕃因内乱而衰落，唐朝收复了河西走廊等失地。史称「大中之治」——「大中之政，有贞观之风」。唐末诗人赞他「小太宗」。但晚年也服丹药，859年中毒身亡。" },
+  { family:"李家", name:"李漼",   title:"唐懿宗",      start:859,  end:873,  influence:15,
+    bio:"李漼（833–873），唐宣宗李忱长子。即位后荒淫奢侈——每月设宴十余次、出巡随从十余万人、宠信伶人乐工。873年迎佛骨——从法门寺到长安三百里路上「沸天烛地」。他对百姓的疾苦视而不见——裘甫起义、庞勋起义相继爆发，唐朝的统治根基已严重动摇。873年病逝。史家评其「器本中庸，流于荒诞」——唐朝的彻底崩溃已不可逆转。" },
+  { family:"李家", name:"李儇",   title:"唐僖宗",      start:873,  end:888,  influence:10,
+    bio:"李儇（862–888），唐懿宗李漼第五子。十二岁即位，由宦官田令孜专权——称田令孜为「阿父」。在位期间爆发了唐末最大的民变——黄巢起义（875–884年）：黄巢军从山东打到广州再北上攻入长安，李儇逃亡四川。起义虽被李克用等藩镇镇压，但唐朝中央权威彻底崩溃——「王室日卑，号令不出国门」。888年回到长安后不久病逝，年仅二十六岁。" },
+  { family:"李家", name:"李晔",   title:"唐昭宗",      start:888,  end:904,  influence:15,
+    bio:"李晔（867–904），唐懿宗李漼第七子，僖宗之弟。即位时大唐已是风中残烛——藩镇割据、宦官擅权。他曾试图振作：招募新军、讨伐藩镇。但895年被凤翔节度使李茂贞打败，从此一蹶不振。此后被宦官刘季述囚禁、又被朱温（朱全忠）挟持到洛阳。904年，朱温派人在洛阳将其杀害，年仅三十七岁。他是唐朝最后一个试图有所作为的皇帝——但他的命运已经不由自己做主。" },
+  { family:"李家", name:"李柷",   title:"唐哀帝",      start:904,  end:907,  influence:5,
+    bio:"李柷（892–908），唐昭宗李晔第九子。朱温杀昭宗后立年仅十二岁的他为傀儡皇帝——「政在朱氏，祭则寡人」。在位三年间，朱温将昭宗的九个儿子全部杀死（「九王弑于九曲池」）、屠杀朝廷中忠于唐朝的大臣三十余人于白马驿投尸黄河——「白马之祸」。907年，朱温逼其禅让——唐朝二百八十九年的统治终结。次年被朱温毒杀，年仅十六岁。从李柷开始，五代十国的乱世降临。" },
+
+  // ═══ 武家 — Wu clan ═══
+  { family:"武家", name:"武则天", title:"大周皇帝",    start:660,  end:705,  influence:95,
+    bio:"武则天（624–705），名曌，并州文水人。十四岁入宫为唐太宗才人，太宗驾崩后入感业寺为尼。唐高宗李治即位后将其召回宫中，从此开始了她的权力之路。她以非凡的政治手腕扳倒王皇后、萧淑妃，655年被立为皇后。660年高宗患病后开始协助处理朝政，与高宗并称「二圣」。高宗驾崩后她以太后身份临朝称制。690年正式称帝，改国号为「周」——是中国历史上唯一一位正统女皇帝。在位期间推行科举、提拔寒门、打击关陇贵族，社会经济持续发展。705年神龙政变被迫退位，同年病逝。遗诏去帝号称「则天大圣皇后」，与高宗合葬乾陵。她墓前的无字碑留给后人无尽的想象空间。" },
+
+  // ═══ 长孙家 — Zhangsun clan ═══
+  { family:"长孙家", name:"长孙无忌",title:"太尉/赵国公",start:626,  end:659,  influence:60,
+    bio:"长孙无忌（594–659），字辅机，河南洛阳人，唐太宗长孙皇后之兄。自幼与李世民交好，玄武门之变前是李世民最核心的谋士之一。李世民即位后位列凌烟阁二十四功臣之首。他是《唐律疏议》的主要编纂者——这部法典成为东亚法律体系的经典范式。唐高宗李治即位后他以舅舅兼顾命大臣的身份辅政，权势达到顶峰。但他坚决反对立武则天为皇后——这触怒了武则天。659年被诬以谋反罪流放黔州，在流放途中被逼自杀。他的倒台标志着关陇贵族集团彻底退出唐朝政治舞台的中心。" },
+
+  // ═══ 安家 — An clan ═══
+  { family:"安家", name:"安禄山", title:"大燕皇帝",    start:755,  end:757,  influence:60,
+    bio:"安禄山（703–757），营州柳城人，父为粟特人，母为突厥人。本姓康，因母亲改嫁安姓突厥人而改姓安。以通晓六蕃语言、善于逢迎贿赂起家，获得唐玄宗和杨贵妃的极度宠信——被杨贵妃收为「养子」、玄宗让他兼任平卢范阳河东三镇节度使，手握大唐三分之一的精锐边军。755年在范阳起兵叛乱——「渔阳鼙鼓动地来，惊破霓裳羽衣曲」——安史之乱全面爆发。叛军势如破竹攻占洛阳、长安，玄宗仓皇逃往四川。757年被其子安庆绪所杀。安史之乱虽然最终平定，但大唐从此一蹶不振。" },
+
+  // ═══ 柴家 — Chai clan ═══
+  { family:"柴家", name:"柴荣",   title:"周世宗",      start:954,  end:959,  influence:60,
+    bio:"柴荣（921–959），邢州尧山人，后周太祖郭威的养子（本姓柴，郭威无子收为养子）。即位时年仅三十三岁，却展现出非凡的雄才大略。对内整顿吏治、均定田赋、限制佛教（「三武一宗」灭佛的「一宗」即指他——熔佛像铸铜钱）、修订刑法。对外西败后蜀、南征南唐夺取江北十四州、北伐契丹收复瀛莫二州——可惜959年在北伐途中突发重病班师，不久病逝于开封，年仅三十八岁。他若多活二十年，收复燕云十六州、统一天下的「周世宗」而非「宋太祖」就将改写历史。" },
+
+  // ═══ 赵家 — Zhao (Song) clan ═══
+  { family:"赵家", name:"赵匡胤", title:"宋太祖",      start:960,  end:976,  influence:95,
+    bio:"赵匡胤（927–976），涿郡人，后周禁军殿前都点检。959年周世宗柴荣英年早逝，年仅七岁的柴宗训即位。960年赵匡胤奉命北上御辽，行至陈桥驿时部下「黄袍加身」拥立他为帝——回师开封逼周恭帝禅让，建立宋朝。即位后首要大事便是「杯酒释兵权」——酒宴上劝禁军将领交出兵权，以文抑武的国策由此确立。此后十余年灭后蜀、南汉、南唐等割据政权，基本统一中原和南方。在位期间加强中央集权、完善科举制度——宋朝文治的格局由他奠定。976年与其弟赵光义饮酒后猝死，「烛影斧声」成为千古疑案。" },
+  { family:"赵家", name:"赵佶",   title:"宋徽宗",      start:1100, end:1126, influence:55,
+    bio:"赵佶（1082–1135），宋神宗第十一子，宋哲宗之弟。他本不该做皇帝——只因哲宗无子才以端王身份入继大统。他是中国历史上最具艺术天赋的帝王：独创「瘦金体」书法、花鸟画冠绝画史。但他也是一个灾难性的皇帝——重用蔡京、童贯等「六贼」，大修艮岳园林搜刮天下奇石花木（「花石纲」），导致民怨沸腾、方腊宋江相继起义。1126年金兵南下，他慌忙禅位给儿子赵桓。1127年靖康之变，他与钦宗及整个皇室被金兵掳往北方，受尽凌辱后死于五国城——「靖康耻，犹未雪」成为此后一百五十多年南宋军民心中永远的痛。" },
+  { family:"赵家", name:"赵构",   title:"宋高宗",      start:1127, end:1162, influence:80,
+    bio:"赵构（1107–1187），宋徽宗第九子，宋钦宗之弟。靖康之变时他恰好在河北募兵，成为徽钦二宗被掳后唯一未被俘的皇子。1127年在应天府（今商丘）即位，重建宋朝，是为南宋。早期任用李纲、宗泽、岳飞、韩世忠等主战派，挡住了金兵南下的势头。但后来在秦桧的影响下力主和议——1142年与金签订「绍兴和议」，以称臣纳贡换得半壁江山。同年以「莫须有」罪名冤杀岳飞于风波亭。1162年禅位于养子赵昚，做了二十五年太上皇。他的功绩是保住了华夏半壁江山，他的罪过是亲手扼杀了最有可能收复中原的时机。" },
+  { family:"赵家", name:"赵光义", title:"宋太宗",      start:976,  end:997,  influence:75,
+    bio:"赵光义（939–997），宋太祖赵匡胤之弟，原名匡义，避讳改名光义。976年太祖暴卒——「烛影斧声」千古疑案——他继位为帝。在位期间继续统一事业：978年吴越钱俶纳土归降、979年灭北汉——五代十国分裂局面彻底结束。但在979年北伐契丹的高粱河之战中大败，身中箭伤——此后宋朝对辽转入守势。他完善科举制度——扩大取士名额、创立「糊名誊录」制度，彻底打破了门阀世族对仕途的垄断。" },
+  { family:"赵家", name:"赵恒",   title:"宋真宗",      start:997,  end:1022, influence:45,
+    bio:"赵恒（968–1022），宋太宗赵光义第三子。即位初期勤于政事，任用李沆、寇准等名臣——史称「咸平之治」。1004年辽圣宗与萧太后大举南下，寇准力劝真宗御驾亲征至澶州——宋军士气大振，射杀辽军先锋萧挞凛。双方签订「澶渊之盟」——宋每年向辽输送银十万两、绢二十万匹，换得一百二十年的宋辽和平。但后期他沉迷于「天书封禅」闹剧——伪造天书、东封泰山、西祀汾阴，劳民伤财。" },
+  { family:"赵家", name:"赵祯",   title:"宋仁宗",      start:1022, end:1063, influence:55,
+    bio:"赵祯（1010–1063），宋真宗赵恒第六子。十二岁即位，由刘太后垂帘听政十一年。亲政后以「仁」治天下——宽厚待臣、「包拯犯颜直谏，唾沫溅到脸上他也不发怒」。在位四十二年是大宋文化的黄金时代——范仲淹、欧阳修、包拯、司马光、王安石、苏轼、曾巩等群星璀璨。范仲淹的「庆历新政」虽然失败但影响深远。1063年无子而终——传位于养子赵曙。" },
+  { family:"赵家", name:"赵曙",   title:"宋英宗",      start:1063, end:1067, influence:25,
+    bio:"赵曙（1032–1067），宋太宗曾孙，濮安懿王赵允让之子。仁宗无子，他被收为养子入继大统。即位后因生父濮王的称呼问题引发了长达十八个月的「濮议」争论——司马光、欧阳修等大臣卷入其中。他在位仅四年便病逝，其子神宗赵顼继位——正是宋神宗任用了王安石发动了中国历史上最大规模的改革运动。" },
+  { family:"赵家", name:"赵顼",   title:"宋神宗",      start:1067, end:1085, influence:50,
+    bio:"赵顼（1048–1085），宋英宗赵曙长子。二十岁即位，志在富国强兵。1069年任用王安石推行「熙宁变法」——青苗、免役、市易、保甲、方田均税法等一系列激进改革，旨在「富国强兵」以扭转宋朝积贫积弱的局面。但变法触动了大官僚地主的既得利益，遭到司马光、苏轼等人的激烈反对——新旧党争自此延续数十年。1085年变法以失败告终，神宗也在悔恨中英年早逝，年仅三十七岁。" },
+  { family:"赵家", name:"赵煦",   title:"宋哲宗",      start:1085, end:1100, influence:30,
+    bio:"赵煦（1077–1100），宋神宗赵顼第六子。九岁即位，由祖母高太后垂帘听政——高太后起用司马光，将王安石的新法全部废除（「元祐更化」）。1093年高太后去世后亲政，改元「绍圣」——恢复神宗变法、贬斥旧党。但他宠信奸臣章惇、蔡卞，党争日趋白热化。1100年病逝，年仅二十三岁。无子——其弟赵佶（宋徽宗）继位。宋朝的命运即将在赵佶手里走向深渊。" },
+  { family:"赵家", name:"赵桓",   title:"宋钦宗",      start:1125, end:1127, influence:15,
+    bio:"赵桓（1100–1161），宋徽宗赵佶长子。1125年金兵大举南下，徽宗慌忙禅位于他。他受命于危难之际，但优柔寡断——在先战后和之间反复摇摆。1127年金兵攻破开封——「靖康之变」——他与父亲徽宗、整个皇族三千余人均被金兵掳往北方。被押往金国后受尽凌辱——被封为「重昏侯」。1161年死于五国城（今黑龙江依兰），终年六十一岁。他在位仅一年零四个月，却是宋朝最屈辱的时期。" },
+  { family:"赵家", name:"赵昚",   title:"宋孝宗",      start:1162, end:1189, influence:45,
+    bio:"赵昚（1127–1194），宋太祖赵匡胤七世孙，宋高宗赵构养子。高宗无子，在太祖后裔中选中他入继大统。即位后为岳飞平反、驱逐秦桧党羽、起用主战派张浚——1163年发动「隆兴北伐」。北伐失败后与金签订「隆兴和议」——双方改为叔侄关系。在位期间政治清明、经济繁荣、学术昌盛（朱熹、陆九渊、吕祖谦等大儒活跃），史称「乾淳之治」。1189年禅位于儿子赵惇，做了五年太上皇——是南宋最有作为的皇帝。" },
+  { family:"赵家", name:"赵惇",   title:"宋光宗",      start:1189, end:1194, influence:15,
+    bio:"赵惇（1147–1200），宋孝宗赵昚第三子。即位初期尚能理政，但不久患上了精神疾病——猜忌多疑、惧怕父亲孝宗。绍熙五年（1194年），孝宗病逝——赵惇竟拒绝主持父亲的丧礼，朝野哗然。赵汝愚、韩侂胄等大臣联合太皇太后吴氏发动「绍熙内禅」，逼迫赵惇禅位于其子赵扩。从此被软禁，1200年抑郁而终。" },
+  { family:"赵家", name:"赵扩",   title:"宋宁宗",      start:1194, end:1224, influence:30,
+    bio:"赵扩（1168–1224），宋光宗赵惇次子。绍熙内禅后即位，前期由赵汝愚和韩侂胄辅政。韩侂胄排挤赵汝愚后独揽朝政——1206年发动「开禧北伐」伐金。北伐大败，金兵反攻至长江北岸。1207年韩侂胄被史弥远和杨皇后密谋杀害，函首送金求和——签订「嘉定和议」，宋对金称侄、增岁币。此后史弥远独相二十余年。1224年病逝，无子——史弥远立赵昀为帝。" },
+  { family:"赵家", name:"赵昀",   title:"宋理宗",      start:1224, end:1264, influence:25,
+    bio:"赵昀（1205–1264），宋太祖赵匡胤十世孙。史弥远废太子后立他为帝。在位前期是史弥远的傀儡，1233年史弥远死后才开始亲政——史称「端平更化」。但此时北方形势已发生巨变——1234年蒙古灭金，南宋与蒙古直接对峙。1235年蒙古大举南侵，宋蒙战争全面爆发。晚年他宠信贾贵妃之弟贾似道，朝政再度腐化。1264年病逝，在位四十年——眼睁睁看着蒙古一步步吞噬南宋疆土。" },
+  { family:"赵家", name:"赵禥",   title:"宋度宗",      start:1264, end:1274, influence:15,
+    bio:"赵禥（1240–1274），宋理宗之侄。理宗无子，收其为养子继位。他先天智力发育迟缓——「七岁始能言」。在位期间贾似道专权——「军国重事，咸决于似道」。蒙古军已攻下襄阳、樊城（1268–1273年围城六年），南宋门户洞开。1274年病逝，年仅三十四岁。他的死为南宋覆灭吹响了丧钟——继位的三个幼年皇帝相继在逃亡中度过最后的五年。" },
+  { family:"赵家", name:"赵㬎",   title:"宋恭帝",      start:1274, end:1276, influence:5,
+    bio:"赵㬎（1271–1323），宋度宗赵禥次子。三岁即位，由祖母谢太皇太后和母亲全太后垂帘听政，贾似道继续专权。1275年贾似道在丁家洲大败后被罢免流放，途中被杀。1276年元军攻入临安——谢太皇太后抱着五岁的赵㬎出城投降。他被押往大都，忽必烈封其为「瀛国公」。1288年忽必烈命他出家为僧，后流放至吐蕃。1323年被元英宗赐死——据传是因为他写了怀念故国的诗句。" },
+  { family:"赵家", name:"赵昰",   title:"宋端宗",      start:1276, end:1278, influence:5,
+    bio:"赵昰（1268–1278），宋度宗赵禥庶长子。临安陷落后，张世杰、陆秀夫等大臣护送他和弟弟赵昺南逃——在福州被拥立为帝，年仅七岁。元军穷追不舍，南宋小朝廷一路从福州逃到泉州、潮州、秀山——最后在广东硇洲岛遭遇飓风，龙舟倾覆，赵昰落水受惊生病。1278年在硇洲岛病逝，年仅十岁。他是南宋倒数第二位皇帝——死在逃亡路上。" },
+  { family:"赵家", name:"赵昺",   title:"宋少帝",      start:1278, end:1279, influence:5,
+    bio:"赵昺（1271–1279），宋度宗赵禥第三子。兄长赵昰在硇洲岛病逝后，陆秀夫、张世杰拥立年仅七岁的他为帝，退守崖山（今广东新会）。1279年，元军在张弘范率领下对崖山发动总攻——南宋最后的舰队全军覆没。陆秀夫见大势已去，先把自己的妻儿推入海中，然后背起八岁的赵昺纵身跳入大海——「负帝投海」。随后杨太后和十余万军民相继殉国。南宋灭亡。" },
+
+  // ═══ 秦家 — Qin Hui ═══
+  { family:"秦家", name:"秦桧",   title:"丞相",        start:1138, end:1155, influence:55,
+    bio:"秦桧（1090–1155），字会之，江宁人。靖康之变时随徽钦二宗被掳往金国，在金营中投靠了金太宗之弟挞懒。1130年被挞懒「放归」南宋——他自称是杀死看守逃回来的，但朝野上下早已怀疑他是金人派回来的内奸。他凭借「南人归南，北人归北」的议和主张获得宋高宗赏识，两度出任宰相。在他的主导下南宋与金签订「绍兴和议」、杀害岳飞父子及张宪——「莫须有」三字从此成为冤狱的代名词。他的跪像至今仍在杭州岳王庙前受万人唾骂。" },
+
+  // ═══ 贾家 — Jia Sidao ═══
+  { family:"贾家", name:"贾似道", title:"丞相/太师",   start:1259, end:1275, influence:45,
+    bio:"贾似道（1213–1275），字师宪，台州人，宋理宗贾贵妃之弟。靠裙带关系起家，却以不凡的手腕掌控朝政十六年。1259年蒙古蒙哥汗亲征四川、忽必烈围攻鄂州，贾似道以丞相身份督师救援——他秘密向忽必烈求和，以称臣纳贡为代价换取蒙古退兵。回到临安后隐瞒求和真相，反而吹嘘「鄂州大捷」。1275年元军大举南下，他率十三万大军迎战，在丁家洲一触即溃——被罢免流放，途中被押送的县尉所杀。" },
+
+  // ═══ 孛儿只斤家 — Borjigin clan ═══
+  { family:"孛儿只斤家", name:"成吉思汗",title:"元太祖",  start:1206, end:1227, influence:95,
+    bio:"成吉思汗（1162–1227），名铁木真，蒙古乞颜部孛儿只斤氏。幼年父亲被塔塔尔人毒杀，部众离散，他九死一生重整部族。1206年在斡难河源被推举为「成吉思汗」，建立大蒙古国。此后二十年间发动了人类历史上最大规模的征服战争——灭西夏、伐金国、灭西辽、横扫花剌子模。他的军队打到里海沿岸、印度河流域，蒙古铁骑的威名震撼欧亚大陆。他建立千户制、颁布《大札撒》、创制蒙古文字、打通东西方商路。1227年在征西夏时病逝于六盘山下。他的子孙继续扩张，建立了横跨欧亚的世界帝国。" },
+  { family:"孛儿只斤家", name:"忽必烈", title:"元世祖",   start:1260, end:1294, influence:85,
+    bio:"忽必烈（1215–1294），成吉思汗之孙，拖雷第四子。蒙哥汗去世后在兄弟争位中胜出——1260年在开平即大汗位，后击败弟弟阿里不哥。1271年采纳刘秉忠建议取《易经》「大哉乾元」之意改国号为「大元」，定都大都（今北京）——这是中国历史上第一个由少数民族建立的大一统王朝。1279年元军在崖山海战中彻底消灭南宋，中国再次统一。在位期间推行汉法、创建行省制度、发行纸币、发展海运。但他晚年两次远征日本均遭台风覆灭，对东南亚的征伐也大多失败。" },
+  { family:"孛儿只斤家", name:"窝阔台", title:"元太宗",   start:1229, end:1241, influence:60,
+    bio:"窝阔台（1186–1241），成吉思汗第三子。1229年忽里勒台大会上被推举为大汗。在位期间完成了父亲未竟的征服事业：1234年灭金国——金哀宗自杀，金朝覆灭；发动「长子西征」——拔都率领速不台等西征欧洲，打到波兰和匈牙利（1241年莱格尼察之战大败波兰与条顿骑士团联军）。同时他在哈拉和林建都城、完善驿站制度。但酗酒成性——1241年在一次饮酒过度后暴卒，他的死拯救了欧洲。" },
+  { family:"孛儿只斤家", name:"脱列哥那",title:"监国皇后",start:1241, end:1246, influence:20,
+    bio:"脱列哥那（？–1246），窝阔台之妻。窝阔台死后她以皇后身份摄政五年（「乃马真后称制」）。她废黜了窝阔台指定的继承者失烈门，改立自己的儿子贵由为大汗。在位期间宠信西域商人奥都剌合蛮，以包税制搜刮民财——但也维持了蒙古帝国的基本稳定。1246年贵由即位后她还政于子。" },
+  { family:"孛儿只斤家", name:"贵由",   title:"元定宗",     start:1246, end:1248, influence:30,
+    bio:"贵由（1206–1248），窝阔台长子。经过五年摄政后在忽里勒台上即位。他在位期间拒绝了拔都（金帐汗国建立者）要求参加忽里勒台的命令——两人从此彻底决裂，埋下了蒙古帝国分裂的伏笔。1248年他以「去叶密立养病」为名率军西行——实为讨伐拔都。但在途中暴卒于横相乙儿，年仅四十二岁。他的死避免了一场蒙古内战，但为蒙哥夺取汗位铺平了道路。" },
+  { family:"孛儿只斤家", name:"海迷失", title:"监国皇后",  start:1248, end:1251, influence:10,
+    bio:"海迷失（？–1252），贵由之妻。贵由暴卒后她以皇后身份摄政三年。但她缺乏政治才能——迷信萨满巫师、政令混乱。1251年拔都支持拖雷之子蒙哥在忽里勒台上即大汗位——标志着汗位从窝阔台系转到拖雷系。海迷失试图发动政变推翻蒙哥，事败后被蒙哥下令「裹以毡投于河」处死——窝阔台后裔遭到大规模清洗。" },
+  { family:"孛儿只斤家", name:"蒙哥",   title:"元宪宗",     start:1251, end:1259, influence:55,
+    bio:"蒙哥（1209–1259），成吉思汗之孙，拖雷长子。在拔都的支持下夺取大汗之位。他在位期间是蒙古帝国征服事业的又一个高峰：派弟弟旭烈兀西征灭阿拔斯王朝（1258年攻陷巴格达）、派弟弟忽必烈南征大理（1253年灭大理国）。1259年他亲征南宋——在围攻合州钓鱼城时被宋军炮石击中身亡（一说染瘟疫），年仅五十岁。钓鱼城从此被称为「上帝折鞭处」——蒙哥之死导致蒙古西征军回撤，拯救了非洲和欧洲；也引发了忽必烈与阿里不哥的汗位争夺战。" },
+  { family:"孛儿只斤家", name:"铁穆耳", title:"元成宗",     start:1294, end:1307, influence:40,
+    bio:"铁穆耳（1265–1307），忽必烈之孙，真金太子第三子。忽必烈死后即位——他放弃了祖父对日本和东南亚的征伐政策，转为休养生息。在位期间「守成」为主——减省赋税、限制诸王权力、维持了元朝的基本稳定。但与窝阔台汗国、察合台汗国的关系恶化。1307年病逝，无子——元朝从此陷入了频繁的皇位更替和政治动荡。" },
+  { family:"孛儿只斤家", name:"海山",   title:"元武宗",     start:1307, end:1311, influence:30,
+    bio:"海山（1281–1311），元成宗铁穆耳之侄。成宗无子，他在弟弟爱育黎拔力八达的支持下即位。在位四年——大肆封赏、滥封官爵、财政恶化。但也做了一些建设：设立尚书省、发行至大银钞、崇奉藏传佛教。1311年病逝，年仅三十岁。临终传位于弟弟爱育黎拔力八达——「兄终弟及」的承诺维持了皇位的和平交接。" },
+  { family:"孛儿只斤家", name:"爱育黎拔力八达",title:"元仁宗",start:1311, end:1320, influence:35,
+    bio:"爱育黎拔力八达（1285–1320），海山之弟。即位后罢黜哥哥时期的弊政——废除尚书省、整顿财政、削减冗官。他最重要的贡献是恢复科举制度——1315年开科取士（此时距宋朝灭亡已三十六年），以程朱理学为考试标准。但他违背了「兄终弟及」的承诺——将自己的儿子硕德八剌立为太子。1320年病逝。他是元朝中期最有文化修养的皇帝——但他的背约也开启了元朝皇位的血腥争夺。" },
+  { family:"孛儿只斤家", name:"硕德八剌",title:"元英宗",   start:1320, end:1323, influence:20,
+    bio:"硕德八剌（1303–1323），元仁宗之子。十七岁即位，年少有为——推行新政、裁撤冗官、限制权臣铁木迭儿。但改革触动了保守的蒙古贵族利益。1323年，他从上都返回大都途中在南坡店扎营——铁木迭儿余党铁失等人发动「南坡之变」，闯入帐中将他杀害，年仅二十岁。他是元朝第一位被弑杀的皇帝——此后元朝皇位更替的血腥程度不断升级。" },
+  { family:"孛儿只斤家", name:"也孙铁木儿",title:"泰定帝", start:1323, end:1328, influence:25,
+    bio:"也孙铁木儿（1293–1328），忽必烈之孙，真金太子的长孙。「南坡之变」中英宗被杀后，他在漠北被铁失等人拥立为帝。即位后为洗刷嫌疑——立即将铁失等弑君者全部处死。在位五年统治平稳——但也无所作为。1328年病死于上都。他的死引发了元朝最惨烈的内战——「两都之战」：大都的元文宗与上都的天顺帝兵戎相见。" },
+  { family:"孛儿只斤家", name:"图帖睦尔",title:"元文宗",   start:1328, end:1332, influence:30,
+    bio:"图帖睦尔（1304–1332），元武宗海山次子。泰定帝死后，在大都的燕铁木儿发动政变拥立他为帝——与上都的天顺帝阿速吉八发生「两都之战」。在札牙笃汗（后来的元明宗）的斡旋下双方激战——大都军获胜。图帖睦尔曾迎兄长和世㻋即位（元明宗），但仅数月明宗便「暴崩」——被燕铁木儿毒杀。他复位后基本是燕铁木儿的傀儡——大权旁落。1332年病逝。" },
+  { family:"孛儿只斤家", name:"懿璘质班",title:"元宁宗",   start:1332, end:1333, influence:5,
+    bio:"懿璘质班（1326–1332），元明宗和世㻋次子。文宗临终前因愧疚当年害死兄长明宗，遗诏传位于明宗之子。年仅六岁的懿璘质班被权臣燕铁木儿拥立为帝——但即位仅五十三天便病死。燕铁木儿本想立文宗之子，但文宗皇后坚持遵从遗诏——改立懿璘质班的兄长妥懽帖睦尔。" },
+  { family:"孛儿只斤家", name:"妥懽帖睦尔",title:"元顺帝", start:1333, end:1368, influence:35,
+    bio:"妥懽帖睦尔（1320–1370），元明宗和世㻋长子。十三岁即位。前期权臣伯颜专权——「势焰熏灼，天下之人唯知有伯颜而已」。1340年他联合脱脱发动政变铲除伯颜。脱脱执政期间推行「至正新政」——恢复科举、减轻赋税、治理黄河。但1351年红巾军起义爆发——「莫道石人一只眼，挑动黄河天下反」。此后内战席卷全国，朱元璋、陈友谅、张士诚等群雄并起。1368年明军北伐——徐达攻入大都，妥懽帖睦尔北逃应昌（「元朝北遁」），元朝在中原的统治终结。朱元璋因其「知顺天命」而谥为「顺帝」。" },
+
+  // ═══ 朱家(明) — Zhu clan ═══
+  { family:"朱家", name:"朱元璋", title:"明太祖",      start:1368, end:1398, influence:95,
+    bio:"朱元璋（1328–1398），原名朱重八，濠州钟离人。出身赤贫——父母兄长在瘟疫中饿死，他无钱埋葬，只好入皇觉寺为僧。二十五岁投奔郭子兴的红巾军，从底层士兵一路征战：灭陈友谅（鄱阳湖之战）、平张士诚、驱逐蒙元——1368年在应天（今南京）称帝，建立明朝。同年徐达常遇春北伐攻入大都，元朝覆灭。在位期间严惩贪腐——贪污六十两银子以上者剥皮实草；废丞相、设锦衣卫。从乞丐到皇帝，他是中国历史上出身最低的帝王，也是最勤政的帝王之一。" },
+  { family:"朱家", name:"朱允炆", title:"建文帝",      start:1398, end:1402, influence:30,
+    bio:"朱允炆（1377–？），明太祖朱元璋之孙，太子朱标之子。因父亲早逝被朱元璋立为皇太孙。即位后任用齐泰、黄子澄、方孝孺等文臣推行「建文新政」——减刑宽狱、减轻江南重赋。但他急于削藩——即位不到一年便废黜五位藩王——矛头直指实力最雄厚的燕王朱棣。1399年朱棣以「清君侧」为名起兵——「靖难之役」打了三年。1402年朱棣攻入南京，皇宫大火——朱允炆从此下落不明：有人说他烧死在宫中，有人说他化装成和尚从地道逃走了。他的生死是明朝最大的历史谜案。" },
+  { family:"朱家", name:"朱棣",   title:"明成祖",      start:1402, end:1424, influence:85,
+    bio:"朱棣（1360–1424），明太祖朱元璋第四子。建文帝削藩时他以「靖难」为名起兵，四年征战从北平打到南京，成为中国历史上唯一一个以藩王身份造反成功的案例。即位后迁都北京。五次亲征漠北打击蒙古残余势力、派郑和六下西洋、编纂《永乐大典》——这部旷世巨著是中国古代最大的百科全书。设内阁、东厂，完善了明朝的政治制度。1424年第五次亲征蒙古归途中病逝于榆木川。他的庙号从「太宗」被嘉靖皇帝改为「成祖」——承认了他并非一般继承者而是再造江山的雄主。" },
+  { family:"朱家", name:"朱高炽", title:"明仁宗",      start:1424, end:1425, influence:20,
+    bio:"朱高炽（1378–1425），明成祖朱棣长子。体胖多病，不擅骑射——父亲朱棣多次想废黜他，但在「好圣孙」朱瞻基的加持下保住了太子之位。即位后大幅纠正父亲的政策——停止下西洋、减轻赋税、赦免建文旧臣、任用杨士奇杨荣杨溥等贤臣。但他在位仅十个月便病逝——「在位一载，用人行政，善不胜书」。《明史》称其开启了「仁宣之治」。" },
+  { family:"朱家", name:"朱瞻基", title:"明宣宗",      start:1425, end:1435, influence:45,
+    bio:"朱瞻基（1399–1435），明仁宗朱高炽长子，朱棣之孙。朱棣对这个孙子极为喜爱——据说「好圣孙」是朱棣决心传位给体弱多病的朱高炽的重要原因。他即位后与「三杨」（杨士奇、杨荣、杨溥）等贤臣配合默契，社会稳定繁荣——与其父明仁宗的短暂统治合称「仁宣之治」。但他也有另一面——嗜好斗蟋蟀，「促织天子」的名声让他在民间讪笑。在位十年病逝，年仅三十六岁。宣德之后，明朝开始走下坡路。" },
+  { family:"朱家", name:"朱祁镇", title:"明英宗",      start:1435, end:1449, influence:30,
+    bio:"朱祁镇（1427–1464），明宣宗朱瞻基长子。八岁即位，由祖母张太皇太后辅政，「三杨」继续执政——正统前期延续了仁宣之治的稳定局面。但1442年张太皇太后去世、三杨相继退出政坛后，他宠信宦官王振。1449年，在王振怂恿下御驾亲征瓦剌——七月出兵，八月在土木堡全军覆没，朱祁镇被也先俘虏。明朝五十万精锐毁于一旦——「土木之变」是明朝由盛转衰的转折点。" },
+  { family:"朱家", name:"朱祁钰", title:"明代宗",      start:1449, end:1457, influence:25,
+    bio:"朱祁钰（1428–1457），明宣宗朱瞻基次子。土木之变后朱祁镇被俘，于谦等大臣拥立他为帝——遥尊朱祁镇为太上皇。他重用于谦组织北京保卫战——击败瓦剌也先的进攻，保住了大明江山。但他贪恋皇位——朱祁镇被也先放回后，他将兄长软禁在南宫七年，又将朱祁镇的儿子太子朱见深废黜，立自己的儿子为太子。1457年病重时，石亨徐有贞等发动「夺门之变」迎朱祁镇复位。他被废为郕王，一个月后暴卒。" },
+  { family:"朱家", name:"朱祁镇", title:"英宗(复位)",  start:1457, end:1464, influence:25,
+    bio:"朱祁镇（1427–1464），1457年「夺门之变」复位。重新登基后他在石亨、徐有贞的鼓动下——冤杀了于谦。于谦之死「天下冤之」——「粉身碎骨浑不怕，要留清白在人间」成为千古绝唱。复位后期他逐渐疏远夺门功臣，并在临终前废除了惨无人道的宫妃殉葬制度——这是他留给历史唯一的善政。1464年病逝，庙号英宗。" },
+  { family:"朱家", name:"朱见深", title:"明宪宗",      start:1464, end:1487, influence:30,
+    bio:"朱见深（1447–1487），明英宗朱祁镇长子。幼年经历父亲被俘、自己被废太子的创伤——只有年长十七岁的宫女万贞儿始终陪伴他。即位后封万氏为贵妃，万贵妃骄横跋扈——「掖廷御幸有身，饮药伤坠者无数」。政治上的亮点是于谦平反、设立西厂（令太监汪直统领）。成化年间明朝内政平稳，但西厂的设立标志着明朝特务政治的进一步升级。" },
+  { family:"朱家", name:"朱祐樘", title:"明孝宗",      start:1487, end:1505, influence:40,
+    bio:"朱祐樘（1470–1505），明宪宗朱见深第三子。幼年在万贵妃的迫害下躲藏在宫中六年才得以与父亲相认——宫中的宫女和太监秘密抚养了他。即位后驱逐奸佞、任用刘健、谢迁、李东阳等正直大臣，史称「弘治中兴」。他是中国历史上唯一一夫一妻的皇帝——终其一生只有张皇后一人，不纳嫔妃。但他在位期间过于宽容导致宦官势力复苏。在位十八年病逝，年仅三十五岁。弘治中兴成为明朝最后一段相对清明的岁月。" },
+  { family:"朱家", name:"朱厚照", title:"明武宗",      start:1505, end:1521, influence:20,
+    bio:"朱厚照（1491–1521），明孝宗朱祐樘长子。十五岁即位，是中国历史上最贪玩的皇帝之一——在宫中设立「豹房」豢养猛兽、与乐工舞女厮混、自封「总督军务威武大将军总兵官朱寿」。他重用以刘瑾为首的「八虎」宦官集团，1519年宁王朱宸濠在南昌叛乱——王阳明仅用四十三天平定。1521年在「豹房」病逝，无子。堂弟朱厚熜继位——引发了持续三年的「大礼议」。" },
+  { family:"朱家", name:"朱厚熜", title:"明世宗",      start:1521, end:1566, influence:40,
+    bio:"朱厚熜（1507–1566），明宪宗朱见深之孙。武宗无子，他从湖北安陆被迎立为帝。即位后为生父的帝号问题挑起了「大礼议」——长达三年多的权力斗争，最终嘉靖以「左顺门廷杖」痛打反对派大臣收场（十六人被杖毙）。前期励精图治——但「壬寅宫变」后差点被宫女勒死，从此二十余年深居西内一心修道，二十余年不上朝——严嵩以青词博取他的欢心，把持朝政二十载。他是明朝实际在位最长的皇帝之一——四十五年。" },
+  { family:"朱家", name:"朱载坖", title:"明穆宗",      start:1566, end:1572, influence:20,
+    bio:"朱载坖（1537–1572），明世宗朱厚熜第三子。即位后纠正父亲弊政——处死方士、释放因直谏被关押的大臣。「隆庆开关」——开放海禁允许民间海外贸易（史称「隆庆开海」），为张居正的改革和万历前期的繁荣奠定了基础。「隆庆和议」——与蒙古俺答汗达成封贡互市，结束了长达两百年的明蒙战争。可惜在位仅六年便病逝——临终托孤于高拱、张居正。明朝的最后一段辉煌——「万历中兴」即将到来。" },
+  { family:"朱家", name:"朱翊钧", title:"明神宗/万历", start:1572, end:1620, influence:50,
+    bio:"朱翊钧（1563–1620），明穆宗朱载坖第三子。九岁即位，首辅张居正辅政十年，推行「一条鞭法」等一系列改革——这十年是万历朝最好的十年。张居正去世后他开始亲政，但很快陷入与文官集团的「争国本」拉锯战——他宠爱郑贵妃想立其子为太子，文官集团坚决反对。从1586年起他以怠政抗议——长达三十余年不上朝、不批奏章，朝廷缺官不补，政府近乎瘫痪。他是明朝在位最长的皇帝（四十八年），也是把明朝推向深渊的皇帝。" },
+  { family:"朱家", name:"朱常洛", title:"明光宗",      start:1620, end:1621, influence:10,
+    bio:"朱常洛（1582–1620），明神宗朱翊钧长子。因母亲是宫女身份低微，万历帝一直想立宠妃郑贵妃之子为太子——引发持续十五年的「国本之争」。1620年万历帝驾崩后终于即位。他上台后废除万历朝弊政、补发前线军饷、罢免矿税。但即位仅十天便病倒——服下鸿胪寺丞李可灼进献的「红丸」后暴卒，在位仅一个月。「红丸案」与前一月的「梃击案」和后一月的「移宫案」合称明末三大疑案——党争与阴谋将明朝推向万劫不复的深渊。" },
+  { family:"朱家", name:"朱由校", title:"明熹宗",      start:1620, end:1627, influence:20,
+    bio:"朱由校（1605–1627），明光宗朱常洛长子。十六岁即位，但他对当皇帝毫无兴趣——痴迷木匠活，「斧斤之属，皆躬自操之」，技艺精湛。朝政全交给乳母客氏和太监魏忠贤——「阉党」之祸由此达到顶峰：魏忠贤自称「九千岁」，残酷迫害东林党人（杨涟左光斗等「六君子」惨死狱中）。辽东战场上努尔哈赤攻陷沈阳辽阳，袁崇焕在宁远挡住后金的攻势。1627年病逝，无子——临终召弟弟朱由检继位。" },
+  { family:"朱家", name:"朱由检", title:"崇祯帝",      start:1627, end:1644, influence:40,
+    bio:"朱由检（1611–1644），明光宗朱常洛第五子，明熹宗朱由校之弟。十七岁即位接手的是一个千疮百孔的烂摊子——内有李自成张献忠的农民军席卷全国，外有皇太极的后金铁骑屡次突破长城。他勤政是出了名的——据说每天只睡两三个时辰，衣服打补丁。但他性格多疑、刚愎自用、杀了袁崇焕——自毁长城。1644年李自成攻入北京，他在煤山自缢身亡，遗诏写道「任贼分裂朕尸，勿伤百姓一人」。明朝二百七十六年的江山至此终结。" },
+
+  // ═══ 严家 — Yan Song ═══
+  { family:"严家", name:"严嵩",   title:"首辅",        start:1544, end:1562, influence:50,
+    bio:"严嵩（1480–1567），字惟中，江西分宜人。弘治年间进士，以一手漂亮的书法和青词（道教祭天的骈文）赢得笃信道教的嘉靖皇帝的欢心。他善于揣摩皇帝心意——嘉靖皇帝深居西内一心修道，严嵩便以「票拟」（代皇帝批答奏章）的方式掌控朝政近二十年。他贪赃枉法、卖官鬻爵、打击异己——沈炼、杨继盛等正直大臣相继被迫害至死。1562年被徐阶设计扳倒，抄家革职，晚年在祖坟旁搭草棚栖身，两年后在贫病中死去——「生前极富贵，死后极凄凉。」" },
+
+  // ═══ 张家 — Zhang Juzheng ═══
+  { family:"张家", name:"张居正", title:"首辅/太师",   start:1572, end:1582, influence:65,
+    bio:"张居正（1525–1582），字叔大，号太岳，湖广江陵人。隆庆年间入阁，万历皇帝即位后以首辅身份辅佐年仅九岁的小皇帝——在太后和太监冯保的支持下，他成为实际上掌握帝国大权的人。在位十年推行了一系列深刻改革：一条鞭法合并赋役、考成法整顿吏治、清丈天下田亩增加国家收入、任用戚继光整饬边防。十年间国库充盈——太仓粟可支十年。但他作风强硬专断、生活奢侈。1582年病逝后，万历皇帝对他进行了彻底的清算——抄家、削爵、家属流放。直到天启年间才被平反——「功在社稷，过在身家」是后人对他最公允的评价。" },
+
+  // ═══ 魏家 — Wei Zhongxian ═══
+  { family:"魏家", name:"魏忠贤", title:"九千岁/司礼监秉笔太监",start:1621, end:1627, influence:45,
+    bio:"魏忠贤（1568–1627），原名李进忠，北直隶肃宁人。本是市井无赖，赌债缠身后自阉入宫做太监。天启年间与明熹宗朱由校的乳母客氏勾结——熹宗酷爱木工不爱理政，魏忠贤趁皇帝做木工时呈递奏章，熹宗总说「朕已悉矣，汝辈好为之」。他借机掌控东厂、锦衣卫，对东林党人进行残酷镇压——杨涟、左光斗等六君子被酷刑折磨致死。自称「九千九百岁」。各地为他建生祠无数。1627年崇祯帝即位后立即将其贬谪，在流放途中自缢身亡。是中国历史上权势最大的宦官之一。" },
+
+  // ═══ 爱新觉罗家 — Aisin Gioro clan ═══
+  { family:"爱新觉罗家", name:"努尔哈赤",title:"清太祖",  start:1616, end:1626, influence:75,
+    bio:"努尔哈赤（1559–1626），爱新觉罗氏，建州女真首领。祖、父被明军误杀后，他以「十三副遗甲」起兵复仇。他统一了建州女真各部，又征服海西女真和野人女真——1616年在赫图阿拉建立后金，自立为汗。创立八旗制度——将军事、行政、生产合为一体，使女真人成为一个高度军事化的民族。1618年以「七大恨」誓师反明——萨尔浒之战中以少胜多大败明军四路围剿，明朝在辽东的统治土崩瓦解。1626年在宁远之战中被袁崇焕的红衣大炮击伤，不久去世。他用了四十年把一个分散的女真部落变成了能够与明朝正面对抗的强大政权。" },
+  { family:"爱新觉罗家", name:"皇太极", title:"清太宗",   start:1626, end:1643, influence:70,
+    bio:"皇太极（1592–1643），努尔哈赤第八子。即位后改国号「后金」为「大清」，改女真族名为「满洲」。他完善八旗制度——增设蒙古八旗和汉军八旗，并用反间计借崇祯之手除掉了心腹大患袁崇焕。多次突破长城劫掠中原直达山东。松锦之战大败明军主力洪承畴，明朝在关外的精锐全军覆没。他在位期间还征服了朝鲜、扫平了漠南蒙古——从林丹汗手中夺得元朝传国玉玺。1643年在清军入关前夕猝然病逝——他奠定了清军入主中原的所有条件，只差最后一脚。" },
+  { family:"爱新觉罗家", name:"福临",   title:"顺治帝",    start:1643, end:1661, influence:50,
+    bio:"福临（1638–1661），皇太极第九子。五岁即位，由叔父多尔衮摄政。1644年多尔衮在吴三桂接应下率清军入关——定都北京，开始了清朝对中国的统治。顺治七年多尔衮去世后他开始亲政。在位期间基本完成了对南明和各地抗清势力的军事征服。但他与母亲孝庄太后关系紧张、与皇后不睦——宠妃董鄂氏的死对他打击极大。他一度试图出家为僧，未果。1661年染天花去世，年仅二十三岁。有民间传说说他并未病死而是出家五台山，至今仍是清初宫廷疑案之一。" },
+  { family:"爱新觉罗家", name:"玄烨",   title:"康熙帝",    start:1661, end:1722, influence:95,
+    bio:"玄烨（1654–1722），顺治帝福临第三子。七岁即位，十四岁亲政——亲政后第一件大事便是智擒权臣鳌拜。在位六十一年，是中国帝制时代在位最长的皇帝。平三藩、收台湾、三征噶尔丹、驱逐沙俄侵略者（签订《尼布楚条约》）。派兵入藏驱逐准噶尔势力。他勤政好学——熟读儒家经典、精通天文历算和西方科学。晚年爆发「九子夺嫡」——诸位皇子明争暗斗使他晚年心力交瘁。1722年病逝于畅春园。他奠定了清朝疆域的基本格局——「康乾盛世」由他开启。" },
+  { family:"爱新觉罗家", name:"胤禛",   title:"雍正帝",    start:1722, end:1735, influence:70,
+    bio:"胤禛（1678–1735），康熙帝第四子。在激烈的「九子夺嫡」中胜出。在位十三年，以勤政严苛著称——每天批阅的奏折达数千字，「朕就是这样汉子」便是他御笔朱批中的名句。他整顿财政、清查亏空、推行「耗羡归公」「养廉银」制度、设立军机处以加强皇帝集权。对年羹尧、隆科多等功臣的打击毫不留情。1735年暴卒于圆明园——死因众说纷纭：过劳猝死、服用丹药中毒、被吕留良之女刺杀——均无确证。是清朝最勤政也最具争议的皇帝之一。" },
+  { family:"爱新觉罗家", name:"弘历",   title:"乾隆帝",    start:1735, end:1796, influence:85,
+    bio:"弘历（1711–1799），雍正帝第四子。二十五岁即位，在位六十年后禅位于儿子嘉庆——又做了三年多太上皇，实际掌权长达六十三年，是中国历史上实际执政时间最长的皇帝。前期他延续了康熙雍正的治国方略，清朝国力达到顶峰——「康乾盛世」在他治下达到巅峰：人口突破三亿、疆域达一千三百万平方公里。他标榜「十全武功」：两次平定准噶尔、平定大小和卓、两次攻打大小金川等。但后期吏治腐败严重、对文字狱的残酷打击前所未有。1793年马戛尔尼使团来华要求通商被拒——中国错过了与西方工业文明对接的最后窗口。" },
+  { family:"爱新觉罗家", name:"颙琰",   title:"嘉庆帝",    start:1796, end:1820, influence:35,
+    bio:"颙琰（1760–1820），乾隆帝第十五子。嘉庆元年正式即位，但父亲乾隆以太上皇身份继续掌控大权直到1799年去世。亲政后第一件事便是诛杀和珅——抄没的资产折合白银八亿至十亿两，相当于清政府十五年的财政收入。「和珅跌倒，嘉庆吃饱」成为民谣。在位期间大清帝国已显露衰败迹象：白莲教起义遍及五省、天理教起义竟有一支攻入紫禁城。他试图整顿吏治但收效甚微——大清这艘巨轮已经开始漏水。" },
+  { family:"爱新觉罗家", name:"旻宁",   title:"道光帝",    start:1820, end:1850, influence:35,
+    bio:"旻宁（1782–1850），嘉庆帝第二子。以节俭著称——据说他的龙袍打了补丁。1840年鸦片战争爆发——英国舰队攻陷定海、进逼南京，1842年签订中国近代史上第一个不平等条约《南京条约》：割让香港、开放五口通商、赔款二千一百万银元。泱泱天朝被「蛮夷」打败的屈辱让满清朝野震动。三千年未有之大变局已经降临，而这位以修补龙袍著称的皇帝无能为力。" },
+  { family:"爱新觉罗家", name:"奕詝",   title:"咸丰帝",    start:1850, end:1861, influence:35,
+    bio:"奕詝（1831–1861），道光帝第四子。即位不久便遭遇了太平天国运动——洪秀全在广西金田起义，太平军横扫半个中国，定都南京。与此同时，1856年第二次鸦片战争爆发——英法联军攻入北京，火烧圆明园。咸丰逃往热河避暑山庄，在惊恐和疾病中度过余生。1861年病逝于热河，年仅三十岁。临终前遗命肃顺等八位顾命大臣辅佐年幼的同治皇帝——但很快他的遗孀慈禧发动辛酉政变，八大臣被一网打尽，「垂帘听政」时代由此开始。" },
+  { family:"爱新觉罗家", name:"载淳",   title:"同治帝",    start:1861, end:1875, influence:25,
+    bio:"载淳（1856–1875），清文宗咸丰帝奕詝长子，慈禧太后所生。五岁即位，由慈安与慈禧两宫太后垂帘听政——实际权力全在慈禧手中。在位期间清朝出现了短暂的「同治中兴」：依靠曾国藩、李鸿章、左宗棠等汉族大臣推行洋务运动——设立江南制造总局、福州船政局、派遣留学生赴美、组建北洋水师。同治帝成年后与母亲慈禧关系恶劣——他染上天花于1875年病逝，年仅十九岁。无嗣——慈禧挑选其堂弟载湉继位，继续垂帘听政。" },
+
+  { family:"爱新觉罗家", name:"载湉",   title:"光绪帝",    start:1875, end:1908, influence:30,
+    bio:"载湉（1871–1908），道光帝之孙，醇亲王奕譞之子。同治帝无嗣而终，四岁的载湉被慈禧太后选中入继大统。整个童年和少年时代都在慈禧的阴影下度过——皇帝的虚名和囚徒的实质在他身上完美合一。成年后渴望变法图强——1898年启用康有为、梁启超推动「百日维新」：废八股、办学堂、裁冗官、练新军。但变法仅持续一百零三天便被慈禧发动的戊戌政变强行终止——光绪被软禁于瀛台，六君子血洒菜市口。1908年他在慈禧去世前一天突然「驾崩」——间隔不足二十四小时，死因至今成谜（2008年法医检测证实为砒霜中毒）。他是一位有心救国却无力挣脱枷锁的悲情皇帝。" },
+  { family:"爱新觉罗家", name:"溥仪",   title:"宣统帝",    start:1908, end:1912, influence:20,
+    bio:"溥仪（1906–1967），道光帝曾孙，醇亲王载沣之子。慈禧和光绪在两天内相继去世后，不满三岁的他在父亲载沣（摄政王）的怀抱中登基——登基大典上他哭闹不止，父亲不停地说「快完了，快完了」，被在场的大臣们视为不祥之兆。1912年辛亥革命爆发，在袁世凯的逼迫下隆裕太后代他颁布退位诏书——清朝二百六十八年的统治和延续两千多年的帝制时代同时终结。他的一生是从皇帝到公民的传奇——也是中国帝制时代最后的一缕余晖。" },
+
+  // ═══ 那拉家 — Nala (Cixi) clan ═══
+  { family:"那拉家", name:"慈禧",   title:"慈禧太后/老佛爷",start:1861, end:1908, influence:80,
+    bio:"慈禧（1835–1908），叶赫那拉氏，满洲镶蓝旗人。十七岁入宫为咸丰帝嫔妃，生下皇子载淳后晋封为懿贵妃。1861年咸丰帝驾崩于热河，她联合恭亲王奕訢发动「辛酉政变」铲除顾命八大臣，以「垂帘听政」的名义开始了长达四十七年的实际统治——同治、光绪两任皇帝都是她的傀儡。她支持洋务运动，但戊戌变法中她血腥镇压维新派；她对西方列强既恐惧又利用，庚子国变中竟同时向十一国宣战——导致八国联军侵华。她的统治跨越了近代中国最屈辱的半个世纪。" },
+
+  // ═══ 曾家 — Zeng Guofan ═══
+  { family:"曾家", name:"曾国藩", title:"两江总督/钦差大臣",start:1853, end:1872, influence:60,
+    bio:"曾国藩（1811–1872），字伯涵，号涤生，湖南湘乡人。道光年间进士，以理学修身自律。1853年太平军攻入湖南，他奉命在湖南办团练——由此创建了湘军。他以儒家理学治军——「结硬寨、打呆仗」，不用奇谋只凭坚韧，步步为营最终攻克天京（南京），太平天国覆灭。他是洋务运动的核心推动者——创建安庆内军械所、江南制造总局，派遣中国第一批留学生赴美。他也是传统儒家「修身齐家治国平天下」的最后一个完美实践者——《曾国藩家书》至今广为流传。毛泽东和蒋介石都对他推崇备至。" },
+
+  // ═══ 袁家 — Yuan Shikai ═══
+  { family:"袁家", name:"袁世凯", title:"北洋大臣/内阁总理大臣/大总统",start:1901, end:1912, influence:65,
+    bio:"袁世凯（1859–1916），字慰亭，河南项城人。早年投靠淮军吴长庆，在朝鲜壬午兵变中崭露头角。甲午战争后在天津小站编练新军——「北洋军」由此诞生，成为中国第一支近代化陆军。1901年李鸿章去世后继任直隶总督兼北洋大臣，成为晚清最有权势的汉人大臣。他大力推进新政——创办巡警、兴办学堂。1908年光绪和慈禧相继去世后被摄政王载沣罢黜，回河南「养病」。1911年辛亥革命爆发，清廷被迫重新起用他为内阁总理大臣——他一面以清军镇压革命，一面与革命党谈判。1912年逼清帝退位，成为中华民国临时大总统——他是帝制时代最后的终结者，也是民国初年最大的实权人物。" },
+
+  // ═══ 董家 — Dong Zhuo ═══
+  { family:"董家", name:"董卓",   title:"太师/郿侯",  start:189,  end:192,  influence:70,
+    bio:"董卓（？–192），字仲颖，陇西临洮人。汉末凉州军阀——性粗猛有谋。189年汉灵帝驾崩，外戚何进召他进京诛宦官——董卓趁乱率西凉铁骑入洛阳。他废少帝刘辩、立献帝刘协，自封太师郿侯——「入朝不趋，剑履上殿」。迁都长安后火烧洛阳、「淫乐纵恣」。他修筑郿坞囤积三十年的粮食和无数财宝——「事成雄踞天下，不成守此足以毕老」。192年被吕布和王允合谋刺杀于未央殿——尸体被点了天灯。东汉末年的天下大乱，他是始作俑者。" },
+
+  // ═══ 汝南袁家 — Yuan clan (Runan) ═══
+  { family:"汝南袁家", name:"袁绍",   title:"大将军/邺侯",start:189,  end:202,  influence:60,
+    bio:"袁绍（？–202），字本初，汝南汝阳人。汝南袁氏「四世三公」——自高祖袁安以下四代都有人位居三公——门生故吏遍天下，是东汉末年最显赫的士族。他是讨伐董卓的关东联军盟主。占据冀州后统一河北四州（冀青幽并），麾下谋士如云、猛将如雨，是当时实力最强的诸侯。但优柔寡断——官渡之战中以绝对优势兵力被曹操击败（200年）。202年病逝，袁家随即内讧，被曹操逐一消灭。注意：此汝南袁氏与袁世凯的陈郡项城袁氏非同一族。" },
+  { family:"汝南袁家", name:"袁术",   title:"仲氏皇帝",  start:189,  end:199,  influence:40,
+    bio:"袁术（？–199），字公路，汝南汝阳人，袁绍的堂弟。讨董联军解散后占据南阳和淮南——得到传国玉玺后，于197年在寿春称帝（当时汉献帝尚在），国号「仲氏」。他的称帝之举冒天下之大不韪——众叛亲离、四面楚歌。孙策趁机脱离他独立，吕布击败其军队，曹操讨伐他——他走投无路，呕血而死。死前想喝蜜水——厨子回答「止有血水，安有蜜水」。袁术称帝是中国历史上最不自量力的僭越之一。" },
+
+  // ═══ 苻家 — Fu clan (Former Qin) ═══
+  { family:"苻家", name:"苻坚",   title:"前秦宣昭帝",  start:357,  end:385,  influence:55,
+    bio:"苻坚（338–385），字永固，略阳临渭（今甘肃秦安）氐人，前秦帝国第三位皇帝。他重用汉人王猛为丞相——君臣相得如刘备与诸葛亮，「关陇清晏，百姓丰乐」。在位期间统一了中国北方（灭前燕、前凉、代国）。但王猛临终遗言「愿不以晋为图」被他遗忘——383年他不顾群臣反对亲率八十余万大军南征东晋。淝水之战被谢玄的八万北府兵打得全军覆没——「风声鹤唳，草木皆兵」。前秦随即土崩瓦解——385年被叛将姚苌缢杀于新平佛寺。" },
+
+  // ═══ 拓跋家 — Tuoba clan (Northern Wei) ═══
+  { family:"拓跋家", name:"拓跋珪", title:"北魏道武帝",  start:386,  end:409,  influence:55,
+    bio:"拓跋珪（371–409），字涉珪，鲜卑族拓跋部首领。前秦淝水之战崩溃后，他于386年在牛川重建代国，改国号为「魏」（史称北魏）。参合陂之战大败后燕慕容宝——坑杀降卒四五万人。398年定都平城（今大同），称帝。他解散部落组织、推行「计口授田」——将游牧的鲜卑人转变为定居的农耕者。晚年服「寒食散」导致精神失常——暴虐嗜杀。409年被其子拓跋绍刺杀，年仅三十八岁。" },
+  { family:"拓跋家", name:"拓跋嗣", title:"北魏明元帝",  start:409,  end:423,  influence:35,
+    bio:"拓跋嗣（392–423），拓跋珪长子。父亲被弑后诛杀拓跋绍即位。在位期间执行稳健的治国方针——与南朝刘宋通好、修筑长城防御柔然。423年趁刘裕去世，派奚斤等将领南征——夺取洛阳、滑台、虎牢等河南重镇，将北魏版图扩展到黄河南岸。同年在亲征刘宋途中病逝于平城。" },
+  { family:"拓跋家", name:"拓跋焘", title:"北魏太武帝",  start:423,  end:452,  influence:60,
+    bio:"拓跋焘（408–452），小字佛狸，拓跋嗣长子。十六岁即位——一生征战南北。灭赫连夏、北燕、北凉——439年统一中国北方，结束了五胡十六国一百三十多年的分裂局面。450年率军南征刘宋——直抵长江北岸的瓜步，「饮马长江」震动建康。他灭佛——「三武一宗」灭佛的第一位（446年）——诏令尽诛沙门、焚毁经像。452年被宦官宗爱刺杀，年仅四十四岁。" },
+  { family:"拓跋家", name:"拓跋濬", title:"北魏文成帝",  start:452,  end:465,  influence:20,
+    bio:"拓跋濬（440–465），拓跋焘之孙。宗爱弑杀太武帝后连杀二帝——拓跋濬被拥立为帝后立即诛杀宗爱。在位期间恢复佛教——在平城西武州山开凿云冈石窟（「昙曜五窟」即为五座巨型佛像代表北魏前五位皇帝）。465年病逝，年仅二十五岁。" },
+  { family:"拓跋家", name:"拓跋弘", title:"北魏献文帝",  start:465,  end:471,  influence:15,
+    bio:"拓跋弘（454–476），拓跋濬长子。十一岁即位，由冯太后临朝称制。他亲政后与冯太后发生权力冲突——471年被迫禅位于年仅四岁的太子拓跋宏（冯太后支持的傀儡）。他做了五年太上皇——但冯太后对他极不放心。476年他在平城被软禁后「暴崩」——据传是被冯太后毒杀，年仅二十二岁。" },
+  { family:"拓跋家", name:"拓跋宏", title:"北魏孝文帝",  start:471,  end:499,  influence:60,
+    bio:"拓跋宏（467–499），拓跋弘长子。四岁即位，由祖母冯太后摄政——冯太后推行「太和改制」：俸禄制、均田制、三长制。冯太后死后他亲政——494年将都城从平城迁往洛阳，推行全面的汉化改革：禁胡服胡语、改鲜卑姓氏为汉姓（皇族拓跋氏改姓「元」）、鼓励鲜卑贵族与汉族士族通婚、采用南朝典章制度。他的改革激化了鲜卑守旧贵族的反抗——太子元恂叛逃旧都。499年南征萧齐途中病逝，年仅三十二岁。他是中国历史上最伟大的少数民族改革家之一——北魏从此融入华夏文明。" },
+  { family:"拓跋家", name:"元恪",   title:"北魏宣武帝",  start:499,  end:515,  influence:35,
+    bio:"元恪（483–515），拓跋宏次子。即位后继续父亲的汉化政策——但国势已开始下滑。在位期间宠信舅舅高肇——高肇专权、排斥宗室。南朝的梁武帝萧衍趁北魏内政不稳多次北伐。佛教在洛阳极度兴盛——龙门石窟在此期间大规模开凿。515年病逝，年仅三十二岁。" },
+  { family:"拓跋家", name:"元诩",   title:"北魏孝明帝",  start:515,  end:528,  influence:20,
+    bio:"元诩（510–528），元恪次子。五岁即位，由母亲胡太后临朝称制。胡太后荒淫奢侈——大修佛寺永宁寺高达百丈。她与成年后的元诩矛盾日益尖锐。528年，元诩密诏尔朱荣进京逼胡太后归政。胡太后得知后竟将自己的亲生儿子毒杀——元诩年仅十八岁。胡太后随即立幼主元钊为帝。尔朱荣闻讯大怒——以「问先帝之死」为名率军南下，发动了「河阴之变」。北魏的崩溃由此加速。" },
+  { family:"拓跋家", name:"元修",   title:"北魏孝武帝",  start:532,  end:534,  influence:15,
+    bio:"元修（510–534），元宏之孙。在尔朱氏覆灭后被高欢拥立为帝。他不甘做高欢的傀儡——与关中的宇文泰联络。534年从洛阳逃往长安投奔宇文泰。高欢大怒——另立元善见为帝（东魏孝静帝），迁都邺城。至此拓跋魏正式分裂为东魏和西魏。元修逃到长安后与宇文泰也发生矛盾——534年底被宇文泰毒杀，年仅二十四岁。孝武帝元修是北魏最后一个皇帝——之后的北魏分为东西两部分。" },
+
+  // ═══ 尔朱家 — Erzhu clan ═══
+  { family:"尔朱家", name:"尔朱荣", title:"大丞相/太原王",start:528,  end:530,  influence:45,
+    bio:"尔朱荣（493–530），字天宝，北秀容（今山西朔州）契胡族首领。528年以「问先帝之死」为名率军南下——在河阴将胡太后和幼主元钊投入黄河，又将北魏朝臣宗室两千余人屠杀殆尽——「河阴之变」彻底摧毁了北魏中央朝廷。他立元子攸为帝（孝庄帝），自己回晋阳遥控朝政。先后平定葛荣的六镇流民起义、击败河北邢杲、打退南朝梁的进攻。530年入朝时被不甘做傀儡的孝庄帝亲手刺杀——年仅三十七岁。尔朱荣一死，尔朱氏随即分裂覆灭——他麾下的高欢和宇文泰各自崛起。" },
+
+  // ═══ 后梁朱家 — Zhu clan (Later Liang) ═══
+  { family:"后梁朱家", name:"朱温",   title:"后梁太祖",    start:907,  end:912,  influence:55,
+    bio:"朱温（852–912），宋州砀山人，五代后梁的开国皇帝。原为黄巢起义军将领，后叛降唐朝——被赐名「全忠」。他以宣武节度使身份逐步吞并中原——杀唐昭宗、废唐哀帝李柷，907年逼唐哀帝禅让，建立后梁——唐朝二百八十九年的统治终结、五代十国开始。但他残暴好色——竟与儿媳私通。912年被其子朱友珪刺杀。注意：此砀山朱氏与明朝凤阳朱氏非同一族。" },
+  { family:"后梁朱家", name:"朱友贞", title:"后梁末帝",    start:912,  end:923,  influence:15,
+    bio:"朱友贞（888–923），后梁太祖朱温第三子。兄长朱友珪弑父篡位后他又发动政变杀兄自立。在位期间与晋王李存勖进行了长达十年的「梁晋争霸」——后梁逐渐陷入劣势。923年李存勖称帝建立后唐——随即攻破开封。朱友贞在城破前命亲信将自己杀死——「勿使我为仇人所辱」。后梁亡。他是五代时期被灭国的第一个皇帝。" },
+
+  // ═══ 沙陀李家 — Li clan (Shatuo, Later Tang) ═══
+  { family:"沙陀李家", name:"李存勖", title:"后唐庄宗",    start:923,  end:926,  influence:45,
+    bio:"李存勖（885–926），沙陀人，本姓朱邪，其祖父朱邪赤心被唐懿宗赐姓李（故与陇西李氏非同一族）。父亲李克用是唐末河东节度使。他继父遗志——923年灭后梁称帝，建立后唐，迁都洛阳。「三矢之志」：一矢灭梁、一矢灭燕、一矢逐契丹——他完成了前两件。但他酷爱唱戏——「粉墨登场」终日在宫中演戏，宠信伶人。926年禁军叛乱——他在乱军中被流矢射死。欧阳修评其「方其盛也，举天下之豪杰莫能与之争；及其衰也，数十伶人困之而身死国灭」。" },
+  { family:"沙陀李家", name:"李嗣源", title:"后唐明宗",    start:926,  end:933,  influence:35,
+    bio:"李嗣源（867–933），沙陀人，李克用养子。他本是李存勖麾下大将——在灭梁战争中功劳最大。李存勖被弑后即位。在位期间革除庄宗弊政——杀伶人、罢宫市、减赋税、废苛法。他是五代时期少有的宽厚之主——「在位七年，兵革粗息，年谷屡丰」。但他不识汉字——「虽不知书，所行暗合于道」。晚年因儿子争夺太子之位忧愤成疾——933年病逝。" },
+  { family:"沙陀李家", name:"李从厚", title:"后唐闵帝",    start:933,  end:934,  influence:10,
+    bio:"李从厚（914–934），后唐明宗李嗣源第五子。十九岁即位——年轻柔弱，受制于权臣朱弘昭、冯赟。他试图削弱明宗养子李从珂和女婿石敬瑭的兵权——两人随即举兵反抗。934年李从珂攻入洛阳，李从厚逃亡途中被石敬瑭截获——送至洛阳后被李从珂废杀，年仅二十岁。在位仅四个月。" },
+  { family:"沙陀李家", name:"李从珂", title:"后唐末帝",    start:934,  end:937,  influence:20,
+    bio:"李从珂（885–937），后唐明宗李嗣源养子。发动兵变推翻闵帝后自立为帝。但他与明宗的女婿石敬瑭互相猜忌——936年他逼石敬瑭移镇，石敬瑭以割让燕云十六州为代价向契丹求救。契丹太宗耶律德光亲率五万骑兵南下——后唐军大败。937年石敬瑭与契丹联军围困洛阳，李从珂登上玄武楼自焚而死——传国玉玺也在这场大火中不知所踪。后唐亡。" },
+
+  // ═══ 后晋石家 — Shi clan (Later Jin) ═══
+  { family:"后晋石家", name:"石敬瑭", title:"后晋高祖",    start:936,  end:942,  influence:40,
+    bio:"石敬瑭（892–942），沙陀人，后唐明宗李嗣源之婿。936年起兵反后唐——为求得契丹援军，以割让燕云十六州、每年进贡帛三十万匹、并向小自己十岁的耶律德光称「儿皇帝」为代价——中国历史上最屈辱的外交事件之一。契丹出兵帮他灭后唐，册封他为「大晋皇帝」。他在位六年，面对契丹的欺压忍气吞声。942年在屈辱中病逝——「儿皇帝」的名号让他遗臭万年。" },
+  { family:"后晋石家", name:"石重贵", title:"后晋出帝",    start:942,  end:947,  influence:15,
+    bio:"石重贵（914–974），石敬瑭之侄（一说养子）。即位后改变叔父的屈辱政策——对契丹「称孙不称臣」。契丹太宗耶律德光大怒——944年、945年、946年三次大举南征。947年契丹攻入开封，后晋灭亡——石重贵被掳往北方。他在契丹度过了二十七年漫长的囚徒生涯——在黄龙府一带辗转流放，974年死于建州（今辽宁朝阳）。他是五代时期最悲惨的亡国之君之一。" },
+
+  // ═══ 沙陀刘家 — Liu clan (Shatuo, Later Han) ═══
+  { family:"沙陀刘家", name:"刘知远", title:"后汉高祖",    start:947,  end:948,  influence:35,
+    bio:"刘知远（895–948），沙陀人，后晋河东节度使。契丹灭后晋后他坐镇太原观望——等到契丹因中原人民的激烈抵抗而北撤后，才于947年在太原称帝，建立后汉。但他运气不佳——在位仅一年便病逝。临终将儿子刘承祐托付给苏逢吉、史弘肇等大臣。注意：此沙陀刘氏与彭城刘氏（刘邦刘备）非同一族。" },
+  { family:"沙陀刘家", name:"刘承祐", title:"后汉隐帝",    start:948,  end:951,  influence:15,
+    bio:"刘承祐（931–951），后汉高祖刘知远次子。十七岁即位——少年气盛，不堪忍受顾命大臣的掣肘。950年他发动突然袭击——诛杀史弘肇、杨邠等顾命大臣，又要杀在外统兵的郭威。郭威被迫起兵攻入开封——刘承祐在逃亡途中被部下所杀，年仅二十岁。郭威入京后立刘赟为帝，但不久便取而代之建立后周。后汉是五代中最短命的王朝——仅四年。" },
+
+  // ═══ 郭家 — Guo clan (Later Zhou) ═══
+  { family:"郭家", name:"郭威",   title:"后周太祖",    start:951,  end:954,  influence:35,
+    bio:"郭威（904–954），字文仲，邢州尧山人。原为后汉枢密使——隐帝猜忌他将他全家杀光后，他被迫起兵。951年建立后周——是五代十国时期第一个由汉族建立的政权。他是一位罕见的节俭帝王——临死前遗诏薄葬：用瓦棺纸衣、「勿修下宫、勿置守陵宫人」。他在位期间废除苛捐杂税——五代以来「耕者始有其田」。954年病逝，传位于养子柴荣（周世宗）。郭威的治国方针被柴荣和赵匡胤继承——为宋朝统一奠定了基础。" },
+
+  // ═══ 蔡家 — Cai Jing ═══
+  { family:"蔡家", name:"蔡京",   title:"太师/鲁国公", start:1102, end:1126, influence:45,
+    bio:"蔡京（1047–1126），字元长，兴化军仙游人。北宋晚期权臣——四度出任宰相（历时十七年），是徽宗朝「六贼」之首。他主导了著名的「元祐党人碑」——将司马光、苏轼等三百零九人列为「奸党」，刻碑立于全国。在徽宗的支持下推行「丰亨豫大」的奢侈政策——大修宫苑园林、「花石纲」祸害东南。他书法造诣极高——是「宋四家」（苏黄米蔡）中蔡的最初人选。1126年金兵南下——钦宗将其贬至海南，途中死于潭州（今长沙）。民间传说他沿途买不到食物——百姓「宁饿死亦不卖与蔡京」。" },
+
+  // ═══ 韩家 — Han Tuozhou ═══
+  { family:"韩家", name:"韩侂胄", title:"平章军国事/太师",start:1194, end:1207, influence:35,
+    bio:"韩侂胄（1152–1207），字节夫，相州安阳人，北宋名臣韩琦曾孙。光宗内禅中他发挥了关键作用——拥立宁宗赵扩。此后排挤赵汝愚、朱熹等理学家（「庆元党禁」），独揽朝政十三年。1206年发动「开禧北伐」征伐金国——但准备不足、将帅无能，大败而归。金兵反攻——索要韩侂胄的首级作为议和条件。1207年史弥远与杨皇后合谋——在韩侂胄上朝途中将其乱棍打死，然后函首送金求和。他的首级被送到金国——金人将其「悬于街市」。" },
+
+  // ═══ 史家 — Shi Miyuan ═══
+  { family:"史家", name:"史弥远", title:"右丞相/卫王",  start:1207, end:1233, influence:40,
+    bio:"史弥远（1164–1233），字同叔，明州鄞县人。设计诛杀韩侂胄后登上权力巅峰——独相宁宗朝后期并掌控理宗朝前期，执政长达二十六年。他主导签订丧权辱国的「嘉定和议」——增岁币、函首送金。1224年宁宗驾崩——他废黜太子赵竑，改立赵昀为帝（宋理宗）。理宗即位前十年完全是他手中的傀儡。他的长期专权使南宋政治日益腐败——但也在蒙古灭金前后维持了南宋的对外稳定。1233年病逝——南宋朝政从此进入理宗亲政的「端平更化」时期。" },
+
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   Derived constants
+   ═══════════════════════════════════════════════════════════════════ */
+
+const families = [...new Set(rawData.map(d => d.family))];
+const SLOTS = [
+  'var(--slot-1)','var(--slot-2)','var(--slot-3)','var(--slot-4)',
+  'var(--slot-5)','var(--slot-6)','var(--slot-7)','var(--slot-8)',
+  'var(--slot-9)','var(--slot-10)','var(--slot-11)',
+  'var(--slot-12)','var(--slot-13)','var(--slot-14)','var(--slot-15)',
+  'var(--slot-16)','var(--slot-17)','var(--slot-18)','var(--slot-19)',
+  'var(--slot-20)','var(--slot-21)','var(--slot-22)','var(--slot-23)',
+  'var(--slot-24)','var(--slot-25)','var(--slot-26)','var(--slot-27)',
+  'var(--slot-28)','var(--slot-29)','var(--slot-30)','var(--slot-31)',
+  'var(--slot-32)','var(--slot-33)','var(--slot-34)','var(--slot-35)',
+  'var(--slot-36)','var(--slot-37)','var(--slot-38)','var(--slot-39)',
+  'var(--slot-40)','var(--slot-41)','var(--slot-42)','var(--slot-43)',
+  'var(--slot-44)','var(--slot-45)','var(--slot-46)','var(--slot-47)',
+  'var(--slot-48)','var(--slot-49)','var(--slot-50)'
+];
+const familyMeta = families.map((name, i) => ({
+  name,
+  color: SLOTS[i],
+  members: rawData.filter(d => d.family === name),
+}));
+const famMap = Object.fromEntries(familyMeta.map(f => [f.name, f]));
+
+// Stack order: families sorted by first appearance year descending.
+// Latest debut → first in iteration (stack bottom, y0=0).
+// Earliest debut → last in iteration (stack top).
+// Families with same debut year preserve their original familyMeta order.
+// Reasoning: when a new family debuts, all families sorted below it
+// (later debut years) haven't appeared yet (pct=0), so the new family
+// naturally rises from the bottom (y0=0). As even newer families debut
+// below it, it gets pushed upward — like geological strata.
+const familyDebutYear = {};
+for (const fam of familyMeta) {
+  familyDebutYear[fam.name] = Math.min(...fam.members.map(m => m.start));
+}
+const stackOrder = [...familyMeta].sort((a, b) => {
+  const da = familyDebutYear[a.name];
+  const db = familyDebutYear[b.name];
+  if (da !== db) return db - da;  // descending by debut year
+  return familyMeta.indexOf(a) - familyMeta.indexOf(b);  // preserve original order
+});
+
+// Compute each family's lifecycle: first member start → last member end
+// Used to bridge internal gaps with zero-width hairline connectors
+const familyLifecycle = {};
+for (const fam of familyMeta) {
+  const starts = fam.members.map(m => m.start);
+  const ends   = fam.members.map(m => m.end);
+  familyLifecycle[fam.name] = {
+    start: Math.min(...starts),
+    end:   Math.max(...ends),
+  };
+}
+
+const T_MIN = d3.min(rawData, d => d.start);
+const T_MAX = d3.max(rawData, d => d.end);
+
+/* ═══════════════════════════════════════════════════════════════════
+   Compute time series: yearly resolution, normalized to percentages
+   ═══════════════════════════════════════════════════════════════════ */
+
+function computeSeries() {
+  const series = [];
+  for (let year = T_MIN; year <= T_MAX; year++) {
+    const point = { year };
+    let totalRaw = 0;
+    for (const fam of familyMeta) {
+      let sum = 0;
+      const activeMembers = [];
+      for (const m of fam.members) {
+        if (year >= m.start && year <= m.end) {
+          let inf = m.influence;
+          // smooth ramp in/out over 2 years
+          // fadeIn/fadeOut offset by +1: at contiguous boundaries
+          // (prev.end == curr.start) neither drops to zero, keeping
+          // the family area continuous — no more white vertical gaps
+          const fadeIn  = Math.min(1, (year - m.start + 1) / 2);
+          const fadeOut = Math.min(1, (m.end - year + 1) / 2);
+          inf *= Math.min(fadeIn, fadeOut);
+          sum += inf;
+          if (inf > 0.1) activeMembers.push({ name: m.name, title: m.title, raw: inf });
+        }
+      }
+      const inLifecycle = year >= familyLifecycle[fam.name].start && year <= familyLifecycle[fam.name].end;
+      const isGap = inLifecycle && sum < 0.001;
+      point[fam.name] = { raw: sum, members: activeMembers, _inLifecycle: inLifecycle, _isGap: isGap };
+      totalRaw += sum;
+    }
+    // Normalize
+    for (const fam of familyMeta) {
+      const pct = totalRaw > 0.001 ? (point[fam.name].raw / totalRaw) * 100 : 0;
+      point[fam.name].pct = pct;
+    }
+    series.push(point);
+  }
+  return series;
+}
+
+const timeSeries = computeSeries();
+
+// Build pre-stacked data: for each year, y0/y1 per family
+// Families in a lifecycle gap get a hairline bridge (~0.08%) to keep
+// their stack slot alive and maintain vertical continuity.
+const HAIRLINE_PCT = 0.01;
+
+function buildStackedData(series) {
+  return series.map(point => {
+    const stack = [];
+    let cum = 0;
+    for (const fam of stackOrder) {
+      const data = point[fam.name];
+      const pct = data.pct;
+      if (data._isGap) {
+        // Hairline bridge: reserve a tiny slot so the family still
+        // occupies its stack position during internal gaps
+        stack.push({
+          family: fam.name, y0: cum, y1: cum + HAIRLINE_PCT,
+          pct: 0, members: [], gapBridge: true,
+        });
+        cum += HAIRLINE_PCT;
+      } else {
+        stack.push({
+          family: fam.name, y0: cum, y1: cum + pct,
+          pct, members: data.members, gapBridge: false,
+        });
+        cum += pct;
+      }
+    }
+    return { year: point.year, stack };
+  });
+}
+
+const stackedData = buildStackedData(timeSeries);
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dimensions
+   ═══════════════════════════════════════════════════════════════════ */
+
+const MAIN_H = 500;
+const MAIN_MARGIN = { top: 24, right: 36, bottom: 44, left: 52 };
+const BRUSH_H = 76;
+const BRUSH_MARGIN = { top: 8, right: 36, bottom: 30, left: 52 };
+
+function panelWidth() {
+  return document.getElementById('chart-panel').clientWidth;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════════════════════════════ */
+
+let currentView = { tMin: T_MIN, tMax: T_MAX };
+let isPlaying = false;
+let animId = null;
+
+/* ═══════════════════════════════════════════════════════════════════
+   Render main chart
+   ═══════════════════════════════════════════════════════════════════ */
+
+// Shared helper: split points into contiguous gapBridge segments.
+// Only returns gap=true intervals, each extended into neighbours
+// for seamless joins – prevents full-width edge artifacts.
+function splitBridgeSegments(pts, extendN) {
+  if (pts.length === 0) return [];
+  const segs = [];
+  let cur = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].gapBridge === pts[i - 1].gapBridge) {
+      cur.push(pts[i]);
+    } else {
+      segs.push(cur);
+      cur = [pts[i]];
+    }
+  }
+  segs.push(cur);
+  const out = [];
+  for (let i = 0; i < segs.length; i++) {
+    if (!segs[i][0].gapBridge) continue;
+    const ext = [...segs[i]];
+    if (i > 0) ext.unshift(...segs[i - 1].slice(-extendN));
+    if (i < segs.length - 1) ext.push(...segs[i + 1].slice(0, extendN));
+    out.push(ext);
+  }
+  return out;
+}
+
+function renderMain() {
+  const W = panelWidth();
+  const M = MAIN_MARGIN;
+  const w = W - M.left - M.right;
+  const h = MAIN_H - M.top - M.bottom;
+  const totalW = W;
+  const totalH = MAIN_H;
+
+  const svg = d3.select('#chart-svg')
+    .attr('viewBox', `0 0 ${totalW} ${totalH}`)
+    .style('height', totalH + 'px');
+  svg.selectAll('*').remove();
+
+  const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
+
+  // Clip path
+  g.append('defs').append('clipPath').attr('id','main-clip')
+    .append('rect').attr('x',0).attr('y',-6).attr('width',w).attr('height',h+12);
+
+  // Scales
+  const x = d3.scaleLinear()
+    .domain([currentView.tMin, currentView.tMax]).range([0, w]);
+  const y = d3.scaleLinear()
+    .domain([0, 100.2]).range([h, 0]);
+
+  // ── Gridlines ──
+  const yTicks = y.ticks(5);
+  g.append('g').attr('class','grid').selectAll('line')
+    .data(yTicks).join('line')
+    .attr('x1',0).attr('x2',w)
+    .attr('y1',d=>y(d)).attr('y2',d=>y(d))
+    .attr('stroke','var(--gridline)').attr('stroke-width',1);
+
+  // ── Y axis ──
+  const yAxisG = g.append('g').call(
+    d3.axisLeft(y).tickValues(yTicks).tickFormat(d=>d+'%').tickSize(0).tickPadding(8)
+  );
+  yAxisG.selectAll('.tick text')
+    .attr('fill','var(--text-muted)').attr('font-size',12);
+  yAxisG.select('.domain').remove();
+
+  // ── X axis ──
+  const xTicks = x.ticks(Math.max(4, Math.floor(w / 90)));
+  const xAxisG = g.append('g')
+    .attr('transform',`translate(0,${h})`)
+    .call(
+      d3.axisBottom(x).tickValues(xTicks)
+        .tickFormat(d => d < 0 ? '前'+Math.abs(d) : String(d))
+        .tickSize(0).tickPadding(8)
+    );
+  xAxisG.selectAll('.tick text')
+    .attr('fill','var(--text-muted)').attr('font-size',12);
+  xAxisG.select('.domain')
+    .attr('stroke','var(--baseline)').attr('stroke-width',1);
+
+  // ── Baseline at y=0 ──
+  g.append('line')
+    .attr('x1',0).attr('x2',w).attr('y1',h).attr('y2',h)
+    .attr('stroke','var(--baseline)').attr('stroke-width',1);
+
+  // ── Filter data to view ──
+  const visible = stackedData.filter(d =>
+    d.year >= Math.floor(currentView.tMin) - 1 &&
+    d.year <= Math.ceil(currentView.tMax) + 1
+  );
+
+  // ── Stacked areas ──
+  const clipG = g.append('g').attr('clip-path','url(#main-clip)');
+
+  // Bridge-line data collected during the area pass and drawn last
+  // so they sit on top of all family fills and white gap strokes.
+  const bridgeLines = [];
+
+  // For each family, draw its band from y0 to y1.
+  // Lifecycle gaps get hairline bridges: the area collapses to a sliver
+  // so the family still occupies its stack position during internal gaps.
+  for (const fam of stackOrder) {
+    // Collect all points — including gap-bridge hairline points
+    const points = visible.map(d => {
+      const s = d.stack.find(s => s.family === fam.name);
+      return s ? { year: d.year, y0: y(s.y0), y1: y(s.y1), pct: s.pct, gapBridge: s.gapBridge } : null;
+    }).filter(Boolean);
+
+    if (points.length < 2) continue;
+
+    const hasActive = points.some(d => !d.gapBridge);
+    const hasBridge = points.some(d => d.gapBridge);
+    if (!hasActive && !hasBridge) continue;
+
+    // ---- filled area (active segments, hairline-collapsed gaps) ----
+    const areaGen = d3.area()
+      .x(d => x(d.year))
+      .y0(d => d.y0)
+      .y1(d => d.y1)
+      .curve(d3.curveMonotoneX);
+
+    clipG.append('path')
+      .attr('d', areaGen(points))
+      .attr('fill', fam.color)
+      .attr('fill-opacity', 0.82)
+      .attr('stroke', 'var(--surface-1)')
+      .attr('stroke-width', 2);
+
+    // Collect bridge-line data for second pass (drawn on top of all areas)
+    if (hasBridge) {
+      bridgeLines.push({ family: fam, points });
+    }
+  }
+
+  // ---- Bridge lines: drawn LAST, on top of all areas ----
+  // Solid, fully opaque, ≥2 px family-coloured strokes so the
+  // connection across lifecycle gaps is unmistakably visible.
+  // Uses shared splitBridgeSegments() to only draw gap intervals
+  // (extended into neighbours), preventing full-width edge artifacts.
+  const topLineGen = d3.line()
+    .x(d => x(d.year))
+    .y(d => d.y1)
+    .curve(d3.curveMonotoneX);
+
+  for (const bl of bridgeLines) {
+    for (const seg of splitBridgeSegments(bl.points, 2)) {
+      clipG.append('path')
+        .attr('d', topLineGen(seg))
+        .attr('fill', 'none')
+        .attr('stroke', bl.family.color)
+        .attr('stroke-width', 2)
+        .attr('stroke-opacity', 1);
+    }
+  }
+
+  // ── Person labels ──
+  const labelData = [];
+  for (const fam of familyMeta) {
+    for (const m of fam.members) {
+      const midYear = (m.start + m.end) / 2;
+      if (midYear < currentView.tMin || midYear > currentView.tMax) continue;
+
+      // Find the stacked data point nearest to this member's midpoint
+      let bestPt = null, bestDist = Infinity;
+      for (const d of visible) {
+        const dist = Math.abs(d.year - midYear);
+        if (dist < bestDist) { bestDist = dist; bestPt = d; }
+      }
+      if (!bestPt) continue;
+
+      const s = bestPt.stack.find(s => s.family === fam.name);
+      if (!s || s.pct < 1.5) continue;
+
+      const yBand = y(s.y0 + s.pct / 2);
+      const xPos = x(bestPt.year);
+
+      // Only place if band height in pixels is enough
+      const bandH = Math.abs(y(s.y0) - y(s.y1));
+      if (bandH < 18) continue;
+
+      // Check if this member is actually active at this year
+      const memberActive = s.members.some(mb => mb.name === m.name);
+      if (!memberActive && bestPt.year < m.start - 3) continue;
+
+      labelData.push({
+        x: xPos, y: yBand,
+        name: m.name, title: m.title,
+        family: fam.name, member: m,
+        bandH,
+      });
+    }
+  }
+
+  // Greedy non-overlap filter
+  const placed = [];
+  for (const lbl of labelData) {
+    const tooClose = placed.some(p =>
+      Math.abs(p.x - lbl.x) < 48 && Math.abs(p.y - lbl.y) < 15
+    );
+    if (!tooClose) placed.push(lbl);
+  }
+
+  // Render labels
+  for (const lbl of placed) {
+    const maxWidth = Math.min(lbl.bandH * 2.2, 90);
+    clipG.append('text')
+      .attr('class','person-label')
+      .attr('x', lbl.x).attr('y', lbl.y - 1)
+      .attr('text-anchor','middle')
+      .attr('dominant-baseline','auto')
+      .style('font-size','12px')
+      .text(lbl.name)
+      .on('click', (event) => { event.stopPropagation(); showBio(lbl.member); })
+      .append('title')
+      .text(lbl.name + ' · ' + lbl.title + ' · ' + lbl.family);
+
+    // Subtitle: title
+    if (lbl.bandH > 32) {
+      clipG.append('text')
+        .attr('class','person-label-sub')
+        .attr('x', lbl.x).attr('y', lbl.y + 13)
+        .attr('text-anchor','middle')
+        .text(lbl.title);
+    }
+  }
+
+  // ── Crosshair + hover ──
+  const crossLine = g.append('line')
+    .attr('y1',0).attr('y2',h)
+    .attr('stroke','var(--text-muted)')
+    .attr('stroke-width',1)
+    .style('display','none');
+
+  const tooltip = d3.select('#tooltip');
+
+  g.append('rect')
+    .attr('width',w).attr('height',h)
+    .attr('fill','transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const year = Math.round(x.invert(mx));
+      const cy = Math.max(currentView.tMin, Math.min(currentView.tMax, year));
+
+      crossLine.attr('x1',x(cy)).attr('x2',x(cy)).style('display',null);
+
+      const pt = stackedData.find(d => d.year === cy);
+      if (!pt) { tooltip.style('display','none'); return; }
+
+      let html = `<div class="tt-date">${cy < 0 ? '前' + Math.abs(cy) + '年' : cy + '年'}</div>`;
+      const sorted = [...pt.stack]
+        .filter(s => s.pct > 0.1)
+        .sort((a,b) => b.pct - a.pct);
+      for (const s of sorted) {
+        const fam = famMap[s.family];
+        html += `<div class="tt-row">`;
+        html += `<span class="tt-swatch" style="background:${fam.color}"></span>`;
+        html += `<span class="tt-name">${s.family}</span>`;
+        html += `<span class="tt-pct">${s.pct.toFixed(1)}%</span>`;
+        html += `</div>`;
+        if (s.members.length > 0) {
+          const memStr = s.members.map(m => m.name + '（' + m.title + '）').join('、');
+          html += `<div class="tt-members">${memStr}</div>`;
+        }
+      }
+      tooltip.html(html);
+
+      // tooltip is positioned absolutely within chart-panel
+      const panelW = document.getElementById('chart-panel').clientWidth;
+      let tx = M.left + x(cy) + 14;
+      if (tx + 190 > panelW) tx = M.left + x(cy) - 200;
+      tooltip
+        .style('left', tx + 'px')
+        .style('top', (M.top + 8) + 'px')
+        .style('display', null);
+    })
+    .on('mouseleave', () => {
+      crossLine.style('display','none');
+      tooltip.style('display','none');
+    });
+
+  // ── Legend ──
+  const legendRow = document.getElementById('legend-row');
+  legendRow.innerHTML = familyMeta.map(f =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${f.color}"></span>${f.name}</span>`
+  ).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Render brush / context timeline
+   ═══════════════════════════════════════════════════════════════════ */
+
+function renderBrush() {
+  const W = panelWidth();
+  const M = BRUSH_MARGIN;
+  const w = W - M.left - M.right;
+  const h = BRUSH_H - M.top - M.bottom;
+
+  const svg = d3.select('#brush-svg')
+    .attr('viewBox', `0 0 ${W} ${BRUSH_H}`)
+    .style('height', BRUSH_H + 'px');
+  svg.selectAll('*').remove();
+
+  const g = svg.append('g').attr('transform',`translate(${M.left},${M.top})`);
+
+  const xFull = d3.scaleLinear().domain([T_MIN,T_MAX]).range([0,w]);
+  const yFull = d3.scaleLinear().domain([0,100.2]).range([h,0]);
+
+  // Mini stacked areas — use precomputed stackedData (includes gap bridges)
+  const brushBridgeLines = [];
+  for (const fam of stackOrder) {
+    const points = stackedData.map(d => {
+      const s = d.stack.find(s => s.family === fam.name);
+      return s ? { year: d.year, y0: yFull(s.y0), y1: yFull(s.y1), pct: s.pct, gapBridge: s.gapBridge } : null;
+    }).filter(d => d && (d.pct > 0.01 || d.gapBridge));
+
+    if (points.length < 2) continue;
+
+    const hasBridge = points.some(d => d.gapBridge);
+
+    const areaMini = d3.area()
+      .x(d => xFull(d.year)).y0(d => d.y0).y1(d => d.y1)
+      .curve(d3.curveMonotoneX);
+
+    g.append('path')
+      .attr('d', areaMini(points))
+      .attr('fill', fam.color)
+      .attr('fill-opacity', 0.7)
+      .attr('stroke', 'var(--surface-1)')
+      .attr('stroke-width', 1);
+
+    if (hasBridge) {
+      brushBridgeLines.push({ family: fam, points });
+    }
+  }
+
+  // Bridge lines on top (same as main chart)
+  const topLineMini = d3.line()
+    .x(d => xFull(d.year))
+    .y(d => d.y1)
+    .curve(d3.curveMonotoneX);
+
+  for (const bl of brushBridgeLines) {
+    for (const seg of splitBridgeSegments(bl.points, 2)) {
+      g.append('path')
+        .attr('d', topLineMini(seg))
+        .attr('fill', 'none')
+        .attr('stroke', bl.family.color)
+        .attr('stroke-width', 1.5)
+        .attr('stroke-opacity', 1);
+    }
+  }
+
+  // X axis
+  const xTicks = xFull.ticks(Math.max(3, Math.floor(w / 110)));
+  const xAG = g.append('g')
+    .attr('transform',`translate(0,${h})`)
+    .call(d3.axisBottom(xFull).tickValues(xTicks)
+      .tickFormat(d => d < 0 ? '前'+Math.abs(d) : String(d))
+      .tickSize(0).tickPadding(6));
+  xAG.selectAll('.tick text').attr('fill','var(--text-muted)').attr('font-size',11);
+  xAG.select('.domain').attr('stroke','var(--baseline)').attr('stroke-width',1);
+
+  // Brush
+  const brush = d3.brushX()
+    .extent([[0,0],[w,h]])
+    .on('brush end', function(event) {
+      if (!event.selection) return;
+      const [x0,x1] = event.selection;
+      currentView.tMin = Math.round(xFull.invert(x0));
+      currentView.tMax = Math.round(xFull.invert(x1));
+      if (currentView.tMax - currentView.tMin < 4) {
+        currentView.tMax = currentView.tMin + 4;
+      }
+      renderMain();
+    });
+
+  const brushG = g.append('g').attr('class','brush').call(brush);
+
+  brushG.select('.selection')
+    .attr('fill','var(--slot-1)')
+    .attr('fill-opacity',0.14)
+    .attr('stroke','var(--slot-1)')
+    .attr('stroke-width',1.5);
+
+  brushG.selectAll('.handle')
+    .attr('fill','var(--surface-1)')
+    .attr('stroke','var(--slot-1)')
+    .attr('stroke-width',1.5);
+
+  // Set initial brush
+  brushG.call(brush.move, [xFull(currentView.tMin), xFull(currentView.tMax)]);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Bio modal
+   ═══════════════════════════════════════════════════════════════════ */
+
+function showBio(member) {
+  if (!member || !member.bio) return;
+  document.getElementById('modal-name').textContent = member.name;
+  document.getElementById('modal-family').textContent =
+    member.family + ' · ' + member.title;
+  document.getElementById('modal-text').textContent = member.bio;
+  document.getElementById('modal-meta').innerHTML =
+    `<span>活跃年代：${member.start < 0 ? '前' + Math.abs(member.start) : member.start} — ${member.end < 0 ? '前' + Math.abs(member.end) : member.end}年</span>` +
+    `<span>家族影响力：${member.influence}</span>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function hideBio() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', hideBio);
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) hideBio();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') hideBio();
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Playback
+   ═══════════════════════════════════════════════════════════════════ */
+
+function stopPlayback() {
+  isPlaying = false;
+  if (animId) cancelAnimationFrame(animId);
+  animId = null;
+  document.getElementById('btn-play').classList.remove('is-active');
+  document.getElementById('icon-play').style.display = null;
+  document.getElementById('icon-pause').style.display = 'none';
+}
+
+function togglePlay() {
+  if (isPlaying) { stopPlayback(); return; }
+  isPlaying = true;
+  document.getElementById('btn-play').classList.add('is-active');
+  document.getElementById('icon-play').style.display = 'none';
+  document.getElementById('icon-pause').style.display = null;
+  stepPlayback();
+}
+
+function stepPlayback() {
+  if (!isPlaying) return;
+  const speed = parseFloat(document.getElementById('speed-select').value);
+  const yrsPerFrame = speed * 1.5;
+  const winSize = currentView.tMax - currentView.tMin;
+
+  currentView.tMin += yrsPerFrame;
+  currentView.tMax += yrsPerFrame;
+
+  if (currentView.tMin >= T_MAX) {
+    currentView.tMin = T_MIN;
+    currentView.tMax = T_MIN + winSize;
+  }
+  if (currentView.tMax > T_MAX) {
+    currentView.tMax = T_MAX;
+    currentView.tMin = T_MAX - winSize;
+  }
+  currentView.tMin = Math.max(T_MIN, currentView.tMin);
+
+  renderMain();
+  renderBrush();
+  animId = requestAnimationFrame(stepPlayback);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Controls
+   ═══════════════════════════════════════════════════════════════════ */
+
+function shiftView(deltaYears) {
+  const winSize = currentView.tMax - currentView.tMin;
+  currentView.tMin = Math.max(T_MIN, currentView.tMin + deltaYears);
+  currentView.tMax = Math.min(T_MAX, currentView.tMax + deltaYears);
+  if (currentView.tMax <= currentView.tMin + 4) {
+    if (deltaYears > 0) currentView.tMax = currentView.tMin + 4;
+    else currentView.tMin = currentView.tMax - 4;
+  }
+  renderMain();
+  renderBrush();
+}
+
+function zoomView(deltaPct) {
+  const center = (currentView.tMin + currentView.tMax) / 2;
+  const halfSpan = (currentView.tMax - currentView.tMin) / 2;
+  const newHalfSpan = Math.max(10, Math.min(300, halfSpan * deltaPct));
+  currentView.tMin = Math.max(T_MIN, Math.round(center - newHalfSpan));
+  currentView.tMax = Math.min(T_MAX, Math.round(center + newHalfSpan));
+  if (currentView.tMax - currentView.tMin < 4) {
+    currentView.tMax = currentView.tMin + 4;
+  }
+  renderMain();
+  renderBrush();
+}
+
+document.getElementById('btn-play').addEventListener('click', togglePlay);
+document.getElementById('btn-prev').addEventListener('click', () => shiftView(-40));
+document.getElementById('btn-next').addEventListener('click', () => shiftView(40));
+document.getElementById('btn-zoom-in').addEventListener('click', () => zoomView(0.6));
+document.getElementById('btn-zoom-out').addEventListener('click', () => zoomView(1.6));
+document.getElementById('btn-reset').addEventListener('click', () => {
+  stopPlayback();
+  currentView = { tMin: T_MIN, tMax: T_MAX };
+  renderMain();
+  renderBrush();
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Keyboard
+   ═══════════════════════════════════════════════════════════════════ */
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  const shift = e.shiftKey ? 3 : 1;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); shiftView(-30 * shift); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); shiftView(30 * shift); }
+  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); togglePlay(); }
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomView(0.7); }
+  if (e.key === '-') { e.preventDefault(); zoomView(1.4); }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Table view (accessibility)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function renderTable() {
+  const thead = document.querySelector('#data-table thead');
+  const tbody = document.querySelector('#data-table tbody');
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  let hh = '<tr><th>年份</th>';
+  for (const fam of familyMeta) {
+    hh += `<th><span class="td-swatch" style="background:${fam.color}"></span>${fam.name}</th>`;
+  }
+  hh += '</tr>';
+  thead.innerHTML = hh;
+
+  const span = currentView.tMax - currentView.tMin;
+      const step = span > 300 ? Math.max(10, Math.floor(span / 200)) : Math.max(1, Math.floor(span / 30));
+  for (let y = currentView.tMin; y <= currentView.tMax; y += step) {
+    const pt = stackedData.find(d => d.year === Math.round(y));
+    if (!pt) continue;
+    let row = `<tr><td>${y < 0 ? '前' + Math.abs(Math.round(y)) + '年' : Math.round(y) + '年'}</td>`;
+    for (const fam of familyMeta) {
+      const s = pt.stack.find(s => s.family === fam.name);
+      row += `<td>${s && s.pct > 0.05 ? s.pct.toFixed(1) + '%' : '—'}</td>`;
+    }
+    row += '</tr>';
+    tbody.innerHTML += row;
+  }
+}
+
+document.getElementById('btn-table').addEventListener('click', function() {
+  const wrap = document.getElementById('table-wrap');
+  const visible = wrap.classList.toggle('visible');
+  this.textContent = visible ? '📋 隐藏数据表' : '📋 数据表';
+  if (visible) renderTable();
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Init + resize
+   ═══════════════════════════════════════════════════════════════════ */
+
+renderMain();
+renderBrush();
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { renderMain(); renderBrush(); }, 200);
+});
+</script>
+</body>
+</html>
