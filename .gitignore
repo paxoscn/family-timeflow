@@ -1,2 +1,5 @@
 node_modules/
 selfcheck-screenshots/
+_baseline-*.html
+*.bak
+/tmp-backups/

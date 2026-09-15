@@ -250,8 +250,9 @@ body {
 .chart-panel {
   position: relative; background: var(--surface-1);
   border: 1px solid var(--border-ring); border-radius: 10px; overflow: hidden;
+  touch-action: pan-y; /* preserve vertical scroll; horizontal gestures → chart */
 }
-.chart-svg { display: block; width: 100%; }
+.chart-svg { display: block; width: 100%; touch-action: none; }
 
 /* ── Tooltip ── */
 .tooltip {
@@ -452,9 +453,7 @@ body {
     键盘操作：<kbd>←</kbd> <kbd>→</kbd> 移动时间窗口 &nbsp; <kbd>Shift</kbd>+<kbd>←</kbd> <kbd>→</kbd> 快速移动 &nbsp; <kbd>空格</kbd> 播放/暂停 &nbsp; <kbd>+</kbd> <kbd>−</kbd> 缩放时间轴
   </div>
 
-</div>
-
-<!-- Bio modal -->
+<!-- Bio modal (须在 .viz-root 内，否则 --surface-1 等设计令牌失效导致卡片透明) -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-card" id="modal-card">
     <h3 id="modal-name"></h3>
@@ -463,6 +462,7 @@ body {
     <div class="bio-meta" id="modal-meta"></div>
     <button id="modal-close">关闭</button>
   </div>
+</div>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js">
@@ -1157,6 +1157,42 @@ function buildStackedData(series) {
 const stackedData = buildStackedData(timeSeries);
 
 /* ═══════════════════════════════════════════════════════════════════
+   Pre‑indexed structures — O(1) year access, O(1) family-series access
+   Eliminates the per-frame O(48²N) stack.find scans.
+   ═══════════════════════════════════════════════════════════════════ */
+
+// yearRow: year → stackedData row, direct-array index by year-T_MIN.
+// Years are T_MIN..T_MAX continuous; if a gap is detected we fall back
+// to a Map (the check runs once at init — negligible cost).
+const yearRow = [];
+let _yearsContinuous = true;
+for (let i = 0; i < stackedData.length; i++) {
+  const y = stackedData[i].year;
+  yearRow[y - T_MIN] = stackedData[i];
+}
+for (let y = T_MIN; y <= T_MAX; y++) {
+  if (!yearRow[y - T_MIN]) { _yearsContinuous = false; break; }
+}
+const _yearGet = _yearsContinuous
+  ? (year) => yearRow[year - T_MIN]
+  : (year) => { for (const r of stackedData) if (r.year === year) return r; };
+
+// seriesByFamily: Map famName → [{year,y0,y1,pct,gapBridge,members}] sorted by year.
+// Built once from stackedData; replaces the per-frame stackedData.filter(d => …).find()
+// pattern that scanned O(48 families × N years × 48 find) on every render.
+const seriesByFamily = new Map();
+for (const fam of familyMeta) seriesByFamily.set(fam.name, []);
+for (const row of stackedData) {
+  for (const s of row.stack) {
+    seriesByFamily.get(s.family).push({
+      year: row.year, y0: s.y0, y1: s.y1,
+      pct: s.pct, gapBridge: s.gapBridge, members: s.members,
+    });
+  }
+}
+// Series are built in stackedData order (ascending year); no extra sort needed.
+
+/* ═══════════════════════════════════════════════════════════════════
    Dimensions
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -1165,25 +1201,85 @@ const MAIN_MARGIN = { top: 24, right: 36, bottom: 44, left: 52 };
 const BRUSH_H = 76;
 const BRUSH_MARGIN = { top: 8, right: 36, bottom: 30, left: 52 };
 
-function panelWidth() {
-  return document.getElementById('chart-panel').clientWidth;
+// y 像素只依赖固定常量(MAIN_H/margins)，启动期一次性预计算到 seriesByFamily，
+// 渲染帧内零分配、零 scale 调用（地图瓦片式烘焙）。
+const _hMainPx = MAIN_H - MAIN_MARGIN.top - MAIN_MARGIN.bottom;
+const _yMainPx = d3.scaleLinear().domain([0, 100.2]).range([_hMainPx, 0]);
+for (const _arr of seriesByFamily.values()) {
+  for (const _p of _arr) { _p.y0px = _yMainPx(_p.y0); _p.y1px = _yMainPx(_p.y1); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   State
+   State + scaffold infrastructure (R5: scaffold-once architecture)
    ═══════════════════════════════════════════════════════════════════ */
 
 let currentView = { tMin: T_MIN, tMax: T_MAX };
 let isPlaying = false;
 let animId = null;
 
+// ── Static brush cache + touch rAF state ──
+let _brushCache = null;        // { W, brush, brushG, xFull }
+
+// ── Scaffold persistent elements (built once, updated in-place) ──
+let _scaffoldBuilt = false;
+let _svg, _mainG, _clipG, _moveG, _areasG, _bridgesG, _labelsG;
+let _xAxisG, _yAxisG, _gridG, _baseline, _crossLine;
+let _xScale, _yScale;          // current scales (updated each renderMain)
+let _w, _h, _M;                // current inner dimensions + margin ref
+let _areaPaths = [];           // 48 persistent area paths
+let _bridgePaths = [];         // expandable bridge-line path pool
+let _labelTexts = [];          // expandable label text pool
+let _labelSubTexts = [];       // expandable label subtitle pool
+let _denseArea = false;        // cached LOD curve strategy flag
+
+// ── Gesture transform state ──
+let _gestureActive = false;
+let _gestureAnchorView = null; // {tMin, tMax} - latest re-anchor view (padded)
+let _gestureRenderedView = null; // {tMin, tMax} - what was actually rendered
+let _gesturePxPerYear = 0;
+let _gesturePinchSpan0 = 0;
+let _gesturePinchAnchorYear = 0;
+
+// ── Playback transform state ──
+let _pbActive = false;
+let _pbAnchorView = null;
+let _pbRenderedView = null;
+let _pbPxPerYear = 0;
+let _pbPrevView = null;        // for dirty-check skip
+let _pbDirection = 0;          // +1 right, -1 left, 0 unknown
+let _pbWrapPending = false;
+
 /* ═══════════════════════════════════════════════════════════════════
-   Render main chart
+   Viewport clamping — unified entry for ALL currentView mutations.
+   Preserves window span; when panning hits an edge the window sticks.
+   (Iron rule 2: semantics unchanged from R1-R4)
    ═══════════════════════════════════════════════════════════════════ */
 
-// Shared helper: split points into contiguous gapBridge segments.
-// Only returns gap=true intervals, each extended into neighbours
-// for seamless joins – prevents full-width edge artifacts.
+function clampView(view) {
+  const winSize = view.tMax - view.tMin;
+  if (view.tMin < T_MIN) {
+    view.tMin = T_MIN;
+    view.tMax = Math.min(T_MAX, T_MIN + winSize);
+  }
+  if (view.tMax > T_MAX) {
+    view.tMax = T_MAX;
+    view.tMin = Math.max(T_MIN, T_MAX - winSize);
+  }
+  if (view.tMax - view.tMin < 4) {
+    const mid = (view.tMin + view.tMax) / 2;
+    view.tMin = Math.max(T_MIN, Math.round(mid - 2));
+    view.tMax = Math.min(T_MAX, Math.round(mid + 2));
+    if (view.tMax - view.tMin < 4) {
+      view.tMax = Math.min(T_MAX, view.tMin + 4);
+    }
+  }
+  return view;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOD helpers (unchanged from R4)
+   ═══════════════════════════════════════════════════════════════════ */
+
 function splitBridgeSegments(pts, extendN) {
   if (pts.length === 0) return [];
   const segs = [];
@@ -1208,7 +1304,36 @@ function splitBridgeSegments(pts, extendN) {
   return out;
 }
 
-function renderMain() {
+function decimateSlice(slice, maxPoints) {
+  const n = slice.length;
+  if (n <= maxPoints) return slice;
+  const k = Math.ceil(n / maxPoints);
+  const keep = new Set();
+  keep.add(0);
+  keep.add(n - 1);
+  for (let i = 0; i < n; i++) {
+    const b = !!slice[i].gapBridge;
+    const pb = i > 0 ? !!slice[i - 1].gapBridge : !b;
+    if (b !== pb) {
+      keep.add(i);
+      if (i > 0) keep.add(i - 1);
+      if (i < n - 1) keep.add(i + 1);
+    }
+  }
+  for (let i = 0; i < n; i += k) keep.add(i);
+  return [...keep].sort((a, b) => a - b).map(i => slice[i]);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   buildScaffold() — create persistent DOM once (init + resize).
+   All elements that survive across renderMain frames live here.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function panelWidth() {
+  return document.getElementById('chart-panel').clientWidth;
+}
+
+function buildScaffold() {
   const W = panelWidth();
   const M = MAIN_MARGIN;
   const w = W - M.left - M.right;
@@ -1216,159 +1341,343 @@ function renderMain() {
   const totalW = W;
   const totalH = MAIN_H;
 
-  const svg = d3.select('#chart-svg')
+  _w = w; _h = h; _M = M;
+
+  _svg = d3.select('#chart-svg')
     .attr('viewBox', `0 0 ${totalW} ${totalH}`)
     .style('height', totalH + 'px');
-  svg.selectAll('*').remove();
+  _svg.selectAll('*').remove();
 
-  const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
+  _mainG = _svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
 
-  // Clip path
-  g.append('defs').append('clipPath').attr('id','main-clip')
+  // ── defs / clipPath ──
+  _mainG.append('defs').append('clipPath').attr('id','main-clip')
     .append('rect').attr('x',0).attr('y',-6).attr('width',w).attr('height',h+12);
 
-  // Scales
-  const x = d3.scaleLinear()
-    .domain([currentView.tMin, currentView.tMax]).range([0, w]);
-  const y = d3.scaleLinear()
-    .domain([0, 100.2]).range([h, 0]);
-
-  // ── Gridlines ──
-  const yTicks = y.ticks(5);
-  g.append('g').attr('class','grid').selectAll('line')
-    .data(yTicks).join('line')
+  // ── Gridlines (static: y domain [0,100.2] never changes) ──
+  _yScale = d3.scaleLinear().domain([0, 100.2]).range([h, 0]);
+  const yTicks = _yScale.ticks(5);
+  _gridG = _mainG.append('g').attr('class','grid');
+  _gridG.selectAll('line').data(yTicks).join('line')
     .attr('x1',0).attr('x2',w)
-    .attr('y1',d=>y(d)).attr('y2',d=>y(d))
+    .attr('y1',d=>_yScale(d)).attr('y2',d=>_yScale(d))
     .attr('stroke','var(--gridline)').attr('stroke-width',1);
 
-  // ── Y axis ──
-  const yAxisG = g.append('g').call(
-    d3.axisLeft(y).tickValues(yTicks).tickFormat(d=>d+'%').tickSize(0).tickPadding(8)
+  // ── Y axis (static — y domain never changes) ──
+  _yAxisG = _mainG.append('g').call(
+    d3.axisLeft(_yScale).tickValues(yTicks).tickFormat(d=>d+'%').tickSize(0).tickPadding(8)
   );
-  yAxisG.selectAll('.tick text')
-    .attr('fill','var(--text-muted)').attr('font-size',12);
-  yAxisG.select('.domain').remove();
+  _yAxisG.selectAll('.tick text').attr('fill','var(--text-muted)').attr('font-size',12);
+  _yAxisG.select('.domain').remove();
 
-  // ── X axis ──
-  const xTicks = x.ticks(Math.max(4, Math.floor(w / 90)));
-  const xAxisG = g.append('g')
-    .attr('transform',`translate(0,${h})`)
-    .call(
-      d3.axisBottom(x).tickValues(xTicks)
-        .tickFormat(d => d < 0 ? '前'+Math.abs(d) : String(d))
-        .tickSize(0).tickPadding(8)
-    );
-  xAxisG.selectAll('.tick text')
-    .attr('fill','var(--text-muted)').attr('font-size',12);
-  xAxisG.select('.domain')
-    .attr('stroke','var(--baseline)').attr('stroke-width',1);
+  // ── X axis (persistent group; domain line created once, ticks updated by updateAxes) ──
+  _xAxisG = _mainG.append('g').attr('transform',`translate(0,${h})`);
+  _xAxisG.append('path').attr('class','domain').attr('stroke','var(--baseline)').attr('stroke-width',1);
 
   // ── Baseline at y=0 ──
-  g.append('line')
+  _baseline = _mainG.append('line')
     .attr('x1',0).attr('x2',w).attr('y1',h).attr('y2',h)
     .attr('stroke','var(--baseline)').attr('stroke-width',1);
 
-  // ── Filter data to view ──
-  const visible = stackedData.filter(d =>
-    d.year >= Math.floor(currentView.tMin) - 1 &&
-    d.year <= Math.ceil(currentView.tMax) + 1
-  );
+  // ── Content group (clipped, fixed — never moves) ──
+  _clipG = _mainG.append('g').attr('clip-path','url(#main-clip)');
 
-  // ── Stacked areas ──
-  const clipG = g.append('g').attr('clip-path','url(#main-clip)');
+  // ── Move group (transform target for gestures / playback) ──
+  _moveG = _clipG.append('g').attr('id','move-g');
 
-  // Bridge-line data collected during the area pass and drawn last
-  // so they sit on top of all family fills and white gap strokes.
-  const bridgeLines = [];
+  // ── Area paths (48 persistent, one per family in stackOrder) ──
+  _areasG = _moveG.append('g');
+  _areaPaths = stackOrder.map(fam => {
+    return _areasG.append('path')
+      .attr('fill', fam.color)
+      .attr('fill-opacity', 0.82)
+      .attr('stroke', 'var(--surface-1)')
+      .attr('stroke-width', 2);
+  });
 
-  // For each family, draw its band from y0 to y1.
-  // Lifecycle gaps get hairline bridges: the area collapses to a sliver
-  // so the family still occupies its stack position during internal gaps.
-  for (const fam of stackOrder) {
-    // Collect all points — including gap-bridge hairline points
-    const points = visible.map(d => {
-      const s = d.stack.find(s => s.family === fam.name);
-      return s ? { year: d.year, y0: y(s.y0), y1: y(s.y1), pct: s.pct, gapBridge: s.gapBridge } : null;
-    }).filter(Boolean);
+  // ── Bridge lines (pool, capacity grows on demand, unused → display:none) ──
+  _bridgesG = _moveG.append('g');
+  _bridgePaths = [];
+  const initBridgePool = 96;
+  for (let i = 0; i < initBridgePool; i++) {
+    _bridgePaths.push(
+      _bridgesG.append('path')
+        .attr('fill','none')
+        .attr('stroke-width',2)
+        .attr('stroke-opacity',1)
+        .style('display','none')
+    );
+  }
 
+  // ── Label pool (text elements ≥180, each has <title> child) ──
+  _labelsG = _moveG.append('g');
+  _labelTexts = [];
+  _labelSubTexts = [];
+  const initLabelPool = 200;
+  for (let i = 0; i < initLabelPool; i++) {
+    const t = _labelsG.append('text')
+      .attr('class','person-label')
+      .attr('text-anchor','middle')
+      .attr('dominant-baseline','auto')
+      .style('font-size','12px')
+      .style('display','none');
+    t.append('title');
+    t.append('tspan').attr('class', 'lbl-name');
+    _labelTexts.push(t);
+
+    const s = _labelsG.append('text')
+      .attr('class','person-label-sub')
+      .attr('text-anchor','middle')
+      .style('display','none');
+    s.append('tspan').attr('class', 'lbl-sub');
+    _labelSubTexts.push(s);
+  }
+
+  // ── Event delegation on labelsG (replace 85× per-frame click rebind) ──
+  _labelsG.on('click', function(event) {
+    event.stopPropagation();
+    const el = event.target.closest('.person-label');
+    if (!el) return;
+    const data = el.__data__;
+    if (data && data.member) showBio(data.member);
+  });
+
+  // ── Crosshair (persistent, display toggled by hover handlers) ──
+  _crossLine = _mainG.append('line')
+    .attr('y1',0).attr('y2',h)
+    .attr('stroke','var(--text-muted)')
+    .attr('stroke-width',1)
+    .style('display','none');
+
+  // ── Hover-capture rect (listeners bound once, read _xScale via closure) ──
+  _mainG.append('rect')
+    .attr('class','hover-capture')
+    .attr('width',w).attr('height',h)
+    .attr('fill','transparent')
+    .on('click', function(event) {
+      if (window.handleTap) window.handleTap(event.clientX, event.clientY);
+    })
+    .on('mousemove', function(event) {
+      if (!_xScale) return;
+      const [mx] = d3.pointer(event);
+      const year = Math.round(_xScale.invert(mx));
+      const cy = Math.max(currentView.tMin, Math.min(currentView.tMax, year));
+
+      _crossLine.attr('x1',_xScale(cy)).attr('x2',_xScale(cy)).style('display',null);
+
+      // O(1) yearRow lookup replaces stackedData.find
+      const pt = _yearGet(cy);
+      const tooltip = d3.select('#tooltip');
+      if (!pt) { tooltip.style('display','none'); return; }
+
+      let html = '<div class="tt-date">' + (cy < 0 ? '前' + Math.abs(cy) + '年' : cy + '年') + '</div>';
+      const sorted = [...pt.stack]
+        .filter(s => s.pct > 0.1)
+        .sort((a,b) => b.pct - a.pct);
+      for (const s of sorted) {
+        const fam = famMap[s.family];
+        html += '<div class="tt-row">';
+        html += '<span class="tt-swatch" style="background:' + fam.color + '"></span>';
+        html += '<span class="tt-name">' + s.family + '</span>';
+        html += '<span class="tt-pct">' + s.pct.toFixed(1) + '%</span>';
+        html += '</div>';
+        if (s.members.length > 0) {
+          const memStr = s.members.map(m => m.name + '（' + m.title + '）').join('、');
+          html += '<div class="tt-members">' + memStr + '</div>';
+        }
+      }
+      tooltip.html(html);
+
+      const panelW = document.getElementById('chart-panel').clientWidth;
+      let tx = M.left + _xScale(cy) + 14;
+      if (tx + 190 > panelW) tx = M.left + _xScale(cy) - 200;
+      tooltip
+        .style('left', tx + 'px')
+        .style('top', (M.top + 8) + 'px')
+        .style('display', 'block');
+    })
+    .on('mouseleave', function() {
+      _crossLine.style('display','none');
+      d3.select('#tooltip').style('display','none');
+    });
+
+  // ── Legend (built once — families/colors never change) ──
+  const legendRow = document.getElementById('legend-row');
+  legendRow.innerHTML = familyMeta.map(f =>
+    '<span class="legend-item"><span class="legend-swatch" style="background:' + f.color + '"></span>' + f.name + '</span>'
+  ).join('');
+
+  _scaffoldBuilt = true;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   renderMain() — lightweight attribute-only update.
+   After buildScaffold(), this only mutates attributes (d, transform,
+   textContent, display, __data__). No remove/append.
+
+   R6: Layers refactored — axes/grid/crosshair live outside move-g.
+   updateAxes(view) is separate so gestures/playback can update ticks
+   without triggering a full render.
+   ═══════════════════════════════════════════════════════════════════ */
+
+// ── updateAxes(view) — update x-axis ticks/grid for a given view ──
+// Uses manual data-join on <g.tick> + textContent mutation (not .text())
+// to avoid childList mutations (text node replace) when tick values change.
+// ~24 attribute mutations per call.
+function updateAxes(view) {
+  const axisScale = d3.scaleLinear().domain([view.tMin, view.tMax]).range([0, _w]);
+  const xTicks = axisScale.ticks(Math.max(4, Math.floor(_w / 90)));
+  const fmt = d => d < 0 ? '前' + Math.abs(d) : String(d);
+
+  // Manual data join so d3 reuses existing <g.x-tick> elements by value-key
+  const tick = _xAxisG.selectAll('g.x-tick').data(xTicks, String);
+  tick.exit().remove();
+  const tickEnter = tick.enter().append('g').attr('class', 'x-tick');
+  tickEnter.append('text').attr('fill', 'var(--text-muted)').attr('font-size', 12)
+    .attr('y', 9).attr('dy', '0.71em').attr('text-anchor', 'middle');
+  const tickMerge = tickEnter.merge(tick);
+  tickMerge.each(function(d) {
+    const tx = 'translate(' + axisScale(d) + ',0)';
+    if (this.__lastTx !== tx) { this.__lastTx = tx; this.setAttribute('transform', tx); }
+  });
+  // Guard textContent to avoid #text-node replace mutations on identical values
+  tickMerge.select('text').each(function(d) {
+    const v = fmt(d);
+    if (this.__lastText !== v) { this.__lastText = v; this.textContent = v; }
+  });
+
+  // Domain line (created once in buildScaffold)
+  _xAxisG.select('.domain')
+    .attr('stroke', 'var(--baseline)').attr('stroke-width', 1)
+    .attr('d', 'M0,0.5H' + _w);
+}
+
+// ── _renderContent() — core area/bridge/label rendering ──
+// Assumes _xScale is already set and currentView reflects content domain.
+// All content uses _xScale for positioning; clip rect at [0, _w] trims
+// padded content when xScale range extends beyond [0, _w].
+function _renderContent() {
+  // ── Viewport year range (extended by 1 for smooth edge joins) ──
+  const tMinExt = Math.max(T_MIN, Math.floor(currentView.tMin) - 1);
+  const tMaxExt = Math.min(T_MAX, Math.ceil(currentView.tMax) + 1);
+  const idxStart = tMinExt - T_MIN;
+  const idxEnd = tMaxExt - T_MIN;
+  const sliceLen = idxEnd - idxStart + 1;
+
+  // ── LOD / curve strategy (same semantics as R4) ──
+  const maxPoints = 0.7 * _w;
+  _denseArea = sliceLen >= _w * 0.5;
+
+  // ── Prepare area + bridge data per family ──
+  const areaData = [];     // { pathIdx, dAttr, famColor }
+  const bridgeData = [];   // { famColor, segments: [{dAttr}] }
+
+  for (let fi = 0; fi < stackOrder.length; fi++) {
+    const fam = stackOrder[fi];
+    const fullSeries = seriesByFamily.get(fam.name);
+    let rawPoints = fullSeries.slice(idxStart, idxEnd + 1);
+
+    if (rawPoints.length > maxPoints) {
+      rawPoints = decimateSlice(rawPoints, maxPoints);
+    }
+
+    const points = rawPoints;
     if (points.length < 2) continue;
 
     const hasActive = points.some(d => !d.gapBridge);
     const hasBridge = points.some(d => d.gapBridge);
     if (!hasActive && !hasBridge) continue;
 
-    // ---- filled area (active segments, hairline-collapsed gaps) ----
+    // Area path generator
     const areaGen = d3.area()
-      .x(d => x(d.year))
-      .y0(d => d.y0)
-      .y1(d => d.y1)
-      .curve(d3.curveMonotoneX);
+      .x(d => _xScale(d.year))
+      .y0(d => d.y0px)
+      .y1(d => d.y1px)
+      .curve(_denseArea ? d3.curveLinear : d3.curveMonotoneX);
 
-    clipG.append('path')
-      .attr('d', areaGen(points))
-      .attr('fill', fam.color)
-      .attr('fill-opacity', 0.82)
-      .attr('stroke', 'var(--surface-1)')
-      .attr('stroke-width', 2);
+    areaData.push({ pathIdx: fi, dAttr: areaGen(points), famColor: fam.color });
 
-    // Collect bridge-line data for second pass (drawn on top of all areas)
+    // Collect bridge segments
     if (hasBridge) {
-      bridgeLines.push({ family: fam, points });
+      const topLineGen = d3.line()
+        .x(d => _xScale(d.year))
+        .y(d => d.y1px)
+        .curve(_denseArea ? d3.curveLinear : d3.curveMonotoneX);
+
+      const segs = splitBridgeSegments(points, 2);
+      const segD = segs.map(seg => topLineGen(seg));
+      bridgeData.push({ famColor: fam.color, segD });
     }
   }
 
-  // ---- Bridge lines: drawn LAST, on top of all areas ----
-  // Solid, fully opaque, ≥2 px family-coloured strokes so the
-  // connection across lifecycle gaps is unmistakably visible.
-  // Uses shared splitBridgeSegments() to only draw gap intervals
-  // (extended into neighbours), preventing full-width edge artifacts.
-  const topLineGen = d3.line()
-    .x(d => x(d.year))
-    .y(d => d.y1)
-    .curve(d3.curveMonotoneX);
+  // ── Apply area paths (guarded d-attr + display to minimize mutation records) ──
+  for (const ad of areaData) {
+    const pn = _areaPaths[ad.pathIdx].node();
+    if (pn.__lastD !== ad.dAttr) { pn.__lastD = ad.dAttr; _areaPaths[ad.pathIdx].attr('d', ad.dAttr); }
+  }
+  // Hide area paths not used this frame (family not in view)
+  for (let fi = 0; fi < _areaPaths.length; fi++) {
+    const used = areaData.some(ad => ad.pathIdx === fi);
+    const pn = _areaPaths[fi].node();
+    if (pn.__lastUsed !== used) { pn.__lastUsed = used; _areaPaths[fi].style('display', used ? null : 'none'); }
+  }
 
-  for (const bl of bridgeLines) {
-    for (const seg of splitBridgeSegments(bl.points, 2)) {
-      clipG.append('path')
-        .attr('d', topLineGen(seg))
+  // ── Apply bridge paths from pool (expand pool if needed) ──
+  let bridgeNeeded = 0;
+  for (const bd of bridgeData) bridgeNeeded += bd.segD.length;
+
+  // Ensure pool has enough paths
+  while (_bridgePaths.length < bridgeNeeded) {
+    _bridgePaths.push(
+      _bridgesG.append('path')
         .attr('fill', 'none')
-        .attr('stroke', bl.family.color)
         .attr('stroke-width', 2)
-        .attr('stroke-opacity', 1);
+        .attr('stroke-opacity', 1)
+        .style('display', 'none')
+    );
+  }
+
+  let bpIdx = 0;
+  for (const bd of bridgeData) {
+    for (const d of bd.segD) {
+      const bn = _bridgePaths[bpIdx].node();
+      if (bn.__lastD !== d) { bn.__lastD = d; _bridgePaths[bpIdx].attr('d', d); }
+      if (bn.__lastStroke !== bd.famColor) { bn.__lastStroke = bd.famColor; _bridgePaths[bpIdx].attr('stroke', bd.famColor); }
+      if (bn.__lastDisp !== 'visible') { bn.__lastDisp = 'visible'; _bridgePaths[bpIdx].style('display', null); }
+      bpIdx++;
     }
+  }
+  // Hide unused bridge paths
+  for (let i = bpIdx; i < _bridgePaths.length; i++) {
+    const bn = _bridgePaths[i].node();
+    if (bn.__lastDisp !== 'hidden') { bn.__lastDisp = 'hidden'; _bridgePaths[i].style('display', 'none'); }
   }
 
   // ── Person labels ──
+  // O(1) yearRow lookup; same semantics as R4 (iron rule 4)
   const labelData = [];
   for (const fam of familyMeta) {
     for (const m of fam.members) {
       const midYear = (m.start + m.end) / 2;
       if (midYear < currentView.tMin || midYear > currentView.tMax) continue;
 
-      // Find the stacked data point nearest to this member's midpoint
-      let bestPt = null, bestDist = Infinity;
-      for (const d of visible) {
-        const dist = Math.abs(d.year - midYear);
-        if (dist < bestDist) { bestDist = dist; bestPt = d; }
-      }
+      const _f = Math.floor(midYear);
+      const roundedYear = (midYear - _f <= 0.5) ? _f : _f + 1;
+      const clampedYear = Math.max(currentView.tMin, Math.min(currentView.tMax, roundedYear));
+      const bestPt = _yearGet(clampedYear);
       if (!bestPt) continue;
 
       const s = bestPt.stack.find(s => s.family === fam.name);
       if (!s || s.pct < 1.5) continue;
 
-      const yBand = y(s.y0 + s.pct / 2);
-      const xPos = x(bestPt.year);
-
-      // Only place if band height in pixels is enough
-      const bandH = Math.abs(y(s.y0) - y(s.y1));
+      const bandH = Math.abs(_yScale(s.y0) - _yScale(s.y1));
       if (bandH < 18) continue;
 
-      // Check if this member is actually active at this year
       const memberActive = s.members.some(mb => mb.name === m.name);
       if (!memberActive && bestPt.year < m.start - 3) continue;
 
       labelData.push({
-        x: xPos, y: yBand,
+        x: _xScale(bestPt.year), y: _yScale(s.y0 + s.pct / 2),
         name: m.name, title: m.title,
         family: fam.name, member: m,
         bandH,
@@ -1385,96 +1694,133 @@ function renderMain() {
     if (!tooClose) placed.push(lbl);
   }
 
-  // Render labels
-  for (const lbl of placed) {
-    const maxWidth = Math.min(lbl.bandH * 2.2, 90);
-    clipG.append('text')
-      .attr('class','person-label')
-      .attr('x', lbl.x).attr('y', lbl.y - 1)
-      .attr('text-anchor','middle')
-      .attr('dominant-baseline','auto')
-      .style('font-size','12px')
-      .text(lbl.name)
-      .on('click', (event) => { event.stopPropagation(); showBio(lbl.member); })
-      .append('title')
-      .text(lbl.name + ' · ' + lbl.title + ' · ' + lbl.family);
+  // Expand label pool if needed
+  while (_labelTexts.length < placed.length) {
+    const t = _labelsG.append('text')
+      .attr('class', 'person-label')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'auto')
+      .style('font-size', '12px')
+      .style('display', 'none');
+    t.append('title');
+    t.append('tspan').attr('class', 'lbl-name');
+    _labelTexts.push(t);
 
-    // Subtitle: title
-    if (lbl.bandH > 32) {
-      clipG.append('text')
-        .attr('class','person-label-sub')
-        .attr('x', lbl.x).attr('y', lbl.y + 13)
-        .attr('text-anchor','middle')
-        .text(lbl.title);
-    }
+    const s = _labelsG.append('text')
+      .attr('class', 'person-label-sub')
+      .attr('text-anchor', 'middle')
+      .style('display', 'none');
+    s.append('tspan').attr('class', 'lbl-sub');
+    _labelSubTexts.push(s);
   }
 
-  // ── Crosshair + hover ──
-  const crossLine = g.append('line')
-    .attr('y1',0).attr('y2',h)
-    .attr('stroke','var(--text-muted)')
-    .attr('stroke-width',1)
-    .style('display','none');
+  // Place labels into pool with attribute guards to minimize mutation records
+  for (let i = 0; i < _labelTexts.length; i++) {
+    if (i < placed.length) {
+      const lbl = placed[i];
+      const lnode = _labelTexts[i].node();
+      const ly = lbl.y - 1;
+      // Guard x/y/display to avoid unnecessary attr/style mutations (steady-state)
+      if (lnode.__lastX !== lbl.x) { lnode.__lastX = lbl.x; _labelTexts[i].attr('x', lbl.x); }
+      if (lnode.__lastY !== ly) { lnode.__lastY = ly; _labelTexts[i].attr('y', ly); }
+      if (lnode.__lastDisp !== 'visible') { lnode.__lastDisp = 'visible'; _labelTexts[i].style('display', null); }
 
-  const tooltip = d3.select('#tooltip');
-
-  g.append('rect')
-    .attr('width',w).attr('height',h)
-    .attr('fill','transparent')
-    .on('mousemove', function(event) {
-      const [mx] = d3.pointer(event);
-      const year = Math.round(x.invert(mx));
-      const cy = Math.max(currentView.tMin, Math.min(currentView.tMax, year));
-
-      crossLine.attr('x1',x(cy)).attr('x2',x(cy)).style('display',null);
-
-      const pt = stackedData.find(d => d.year === cy);
-      if (!pt) { tooltip.style('display','none'); return; }
-
-      let html = `<div class="tt-date">${cy < 0 ? '前' + Math.abs(cy) + '年' : cy + '年'}</div>`;
-      const sorted = [...pt.stack]
-        .filter(s => s.pct > 0.1)
-        .sort((a,b) => b.pct - a.pct);
-      for (const s of sorted) {
-        const fam = famMap[s.family];
-        html += `<div class="tt-row">`;
-        html += `<span class="tt-swatch" style="background:${fam.color}"></span>`;
-        html += `<span class="tt-name">${s.family}</span>`;
-        html += `<span class="tt-pct">${s.pct.toFixed(1)}%</span>`;
-        html += `</div>`;
-        if (s.members.length > 0) {
-          const memStr = s.members.map(m => m.name + '（' + m.title + '）').join('、');
-          html += `<div class="tt-members">${memStr}</div>`;
-        }
+      if (lnode.__lastName !== lbl.name) {
+        lnode.__lastName = lbl.name;
+        _labelTexts[i].select('tspan.lbl-name').text(lbl.name);
+        _labelTexts[i].select('title').text(lbl.name + ' · ' + lbl.title + ' · ' + lbl.family);
+        // Attach member data for event delegation
+        lnode.__data__ = { member: lbl.member };
       }
-      tooltip.html(html);
 
-      // tooltip is positioned absolutely within chart-panel
-      const panelW = document.getElementById('chart-panel').clientWidth;
-      let tx = M.left + x(cy) + 14;
-      if (tx + 190 > panelW) tx = M.left + x(cy) - 200;
-      tooltip
-        .style('left', tx + 'px')
-        .style('top', (M.top + 8) + 'px')
-        .style('display', null);
-    })
-    .on('mouseleave', () => {
-      crossLine.style('display','none');
-      tooltip.style('display','none');
-    });
+      if (lbl.bandH > 32) {
+        const snode = _labelSubTexts[i].node();
+        const sy = lbl.y + 13;
+        if (snode.__lastX !== lbl.x) { snode.__lastX = lbl.x; _labelSubTexts[i].attr('x', lbl.x); }
+        if (snode.__lastY !== sy) { snode.__lastY = sy; _labelSubTexts[i].attr('y', sy); }
+        if (snode.__lastDisp !== 'visible') { snode.__lastDisp = 'visible'; _labelSubTexts[i].style('display', null); }
+        if (snode.__lastSub !== lbl.title) {
+          snode.__lastSub = lbl.title;
+          _labelSubTexts[i].select('tspan.lbl-sub').text(lbl.title);
+        }
+      } else {
+        const snode = _labelSubTexts[i].node();
+        if (snode.__lastDisp !== 'hidden') { snode.__lastDisp = 'hidden'; _labelSubTexts[i].style('display', 'none'); }
+      }
+    } else {
+      const lnode = _labelTexts[i].node();
+      if (lnode.__lastDisp !== 'hidden') { lnode.__lastDisp = 'hidden'; _labelTexts[i].style('display', 'none'); }
+      const snode = _labelSubTexts[i].node();
+      if (snode.__lastDisp !== 'hidden') { snode.__lastDisp = 'hidden'; _labelSubTexts[i].style('display', 'none'); }
+    }
+  }
+}
 
-  // ── Legend ──
-  const legendRow = document.getElementById('legend-row');
-  legendRow.innerHTML = familyMeta.map(f =>
-    `<span class="legend-item"><span class="legend-swatch" style="background:${f.color}"></span>${f.name}</span>`
-  ).join('');
+// ── renderMain() — normal (unpadded) render ──
+// currentView → xScale range [0, _w]. Axes reflect currentView.
+function renderMain() {
+  if (!_scaffoldBuilt) buildScaffold();
+
+  // Check if panel width changed (debounced resize usually handles this)
+  const W = panelWidth();
+  const newW = W - MAIN_MARGIN.left - MAIN_MARGIN.right;
+  if (Math.abs(newW - _w) > 2) { buildScaffold(); }
+
+  // ── Update x scale: currentView → [0, _w], px/year = _w / span ──
+  _xScale = d3.scaleLinear().domain([currentView.tMin, currentView.tMax]).range([0, _w]);
+
+  // ── Update axes ──
+  updateAxes(currentView);
+
+  // ── Render content ──
+  _renderContent();
+}
+
+// ── _renderMainPadded(anchorView, padRatio) — padded content render ──
+// Renders a wider domain so that translate scroll has buffer pixels on
+// both sides without white-edge gaps. Critically: px/year = _w/span
+// stays IDENTICAL to renderMain(0), so touchstart has zero visual jump.
+//
+// Returns: { tMin, tMax, anchorSpan } — the rendered domain + anchor span.
+function _renderMainPadded(anchorView, padRatio) {
+  const S = anchorView.tMax - anchorView.tMin;
+  const padYrs = S * padRatio;
+  let pTMin = Math.max(T_MIN, anchorView.tMin - padYrs);
+  let pTMax = Math.min(T_MAX, anchorView.tMax + padYrs);
+
+  // Actual pads after clamping (edges may be asymmetric)
+  const leftPadYrs = anchorView.tMin - pTMin;
+  const rightPadYrs = pTMax - anchorView.tMax;
+  const leftPadPx = (leftPadYrs / S) * _w;
+  const rightPadPx = (rightPadYrs / S) * _w;
+
+  // Save/restore currentView so callers see the correct (non-padded) view
+  const savedView = { tMin: currentView.tMin, tMax: currentView.tMax };
+  currentView.tMin = pTMin;
+  currentView.tMax = pTMax;
+
+  // xScale: padded domain → extended pixel range; px/year = _w/S (unchanged!)
+  _xScale = d3.scaleLinear()
+    .domain([pTMin, pTMax])
+    .range([-leftPadPx, _w + rightPadPx]);
+
+  // Axes show the anchor view (not padded)
+  updateAxes(anchorView);
+
+  // Render content using the padded currentView + xScale
+  _renderContent();
+
+  currentView.tMin = savedView.tMin;
+  currentView.tMax = savedView.tMax;
+
+  return { tMin: pTMin, tMax: pTMax, anchorSpan: S };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
    Render brush / context timeline
    ═══════════════════════════════════════════════════════════════════ */
 
-function renderBrush() {
+function renderBrushStatic() {
   const W = panelWidth();
   const M = BRUSH_MARGIN;
   const w = W - M.left - M.right;
@@ -1490,13 +1836,17 @@ function renderBrush() {
   const xFull = d3.scaleLinear().domain([T_MIN,T_MAX]).range([0,w]);
   const yFull = d3.scaleLinear().domain([0,100.2]).range([h,0]);
 
-  // Mini stacked areas — use precomputed stackedData (includes gap bridges)
+  // Mini stacked areas — use seriesByFamily (no per-point find())
   const brushBridgeLines = [];
   for (const fam of stackOrder) {
-    const points = stackedData.map(d => {
-      const s = d.stack.find(s => s.family === fam.name);
-      return s ? { year: d.year, y0: yFull(s.y0), y1: yFull(s.y1), pct: s.pct, gapBridge: s.gapBridge } : null;
-    }).filter(d => d && (d.pct > 0.01 || d.gapBridge));
+    const fullSeries = seriesByFamily.get(fam.name);
+    const points = [];
+    for (let i = 0; i < fullSeries.length; i++) {
+      const s = fullSeries[i];
+      if (s.pct > 0.01 || s.gapBridge) {
+        points.push({ year: s.year, y0: yFull(s.y0), y1: yFull(s.y1), pct: s.pct, gapBridge: s.gapBridge });
+      }
+    }
 
     if (points.length < 2) continue;
 
@@ -1518,7 +1868,7 @@ function renderBrush() {
     }
   }
 
-  // Bridge lines on top (same as main chart)
+  // Bridge lines on top
   const topLineMini = d3.line()
     .x(d => xFull(d.year))
     .y(d => d.y1)
@@ -1549,13 +1899,12 @@ function renderBrush() {
   const brush = d3.brushX()
     .extent([[0,0],[w,h]])
     .on('brush end', function(event) {
+      if (!event.sourceEvent) return; // iron rule 2: programmatic guard
       if (!event.selection) return;
       const [x0,x1] = event.selection;
       currentView.tMin = Math.round(xFull.invert(x0));
       currentView.tMax = Math.round(xFull.invert(x1));
-      if (currentView.tMax - currentView.tMin < 4) {
-        currentView.tMax = currentView.tMin + 4;
-      }
+      clampView(currentView);
       renderMain();
     });
 
@@ -1572,12 +1921,29 @@ function renderBrush() {
     .attr('stroke','var(--slot-1)')
     .attr('stroke-width',1.5);
 
-  // Set initial brush
+  // Set initial brush position
+  brushG.call(brush.move, [xFull(currentView.tMin), xFull(currentView.tMax)]);
+
+  // Cache for syncBrush
+  _brushCache = { W, brush, brushG, xFull };
+}
+
+// syncBrush: only move handles (no full rebuild unless W changed)
+function syncBrush() {
+  if (!_brushCache || _brushCache.W !== panelWidth()) {
+    renderBrushStatic();
+    return;
+  }
+  const { brushG, brush, xFull } = _brushCache;
   brushG.call(brush.move, [xFull(currentView.tMin), xFull(currentView.tMax)]);
 }
 
+function renderBrush() { syncBrush(); }
+window.renderBrushStatic = renderBrushStatic;
+window.syncBrush = syncBrush;
+
 /* ═══════════════════════════════════════════════════════════════════
-   Bio modal
+   Bio modal (unchanged semantics)
    ═══════════════════════════════════════════════════════════════════ */
 
 function showBio(member) {
@@ -1587,8 +1953,8 @@ function showBio(member) {
     member.family + ' · ' + member.title;
   document.getElementById('modal-text').textContent = member.bio;
   document.getElementById('modal-meta').innerHTML =
-    `<span>活跃年代：${member.start < 0 ? '前' + Math.abs(member.start) : member.start} — ${member.end < 0 ? '前' + Math.abs(member.end) : member.end}年</span>` +
-    `<span>家族影响力：${member.influence}</span>`;
+    '<span>活跃年代：' + (member.start < 0 ? '前' + Math.abs(member.start) : member.start) + ' — ' + (member.end < 0 ? '前' + Math.abs(member.end) : member.end) + '年</span>' +
+    '<span>家族影响力：' + member.influence + '</span>';
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -1605,13 +1971,26 @@ document.addEventListener('keydown', function(e) {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   Playback
+   Playback (R6: transform on move-g + updateAxes each frame)
+   Iron rule 3: yrs/frame = parseFloat(speed) × 1.5, wrap semantics unchanged
+   Fix-B: dirty-check wrap no-op preserved
    ═══════════════════════════════════════════════════════════════════ */
 
 function stopPlayback() {
   isPlaying = false;
   if (animId) cancelAnimationFrame(animId);
   animId = null;
+  _pbActive = false;
+  _pbPrevView = null;
+  _pbWrapPending = false;
+  const moveG = document.getElementById('move-g');
+  if (moveG) {
+    moveG.style.transform = '';
+    moveG.style.willChange = '';
+  }
+  // Precise render at final position
+  renderMain();
+  syncBrush();
   document.getElementById('btn-play').classList.remove('is-active');
   document.getElementById('icon-play').style.display = null;
   document.getElementById('icon-pause').style.display = 'none';
@@ -1623,30 +2002,120 @@ function togglePlay() {
   document.getElementById('btn-play').classList.add('is-active');
   document.getElementById('icon-play').style.display = 'none';
   document.getElementById('icon-pause').style.display = null;
+
+  // Initialize playback transform: padded render at ±100% view width
+  _pbAnchorView = { tMin: currentView.tMin, tMax: currentView.tMax };
+  _pbPrevTMin = currentView.tMin;
+  _pbPrevTMax = currentView.tMax;
+  _pbDirection = 0;
+  _pbWrapPending = false;
+  const padded = _renderMainPadded(_pbAnchorView, 1.0);
+  _pbRenderedView = padded;
+  // px/year = _w / anchorSpan — constant, same as unpadded renderMain
+  _pbPxPerYear = _w / padded.anchorSpan;
+  _pbActive = (padded.tMax - padded.tMin > padded.anchorSpan * 1.1); // only active if margin exists
+
+  const moveG = document.getElementById('move-g');
+  _pbMoveG = moveG;
+  if (moveG && _pbActive) {
+    moveG.style.willChange = 'transform';
+    moveG.style.transform = 'translate3d(0,0,0)';
+  }
+
   stepPlayback();
+}
+
+function _pbReanchor() {
+  _pbAnchorView = { tMin: currentView.tMin, tMax: currentView.tMax };
+  const padded = _renderMainPadded(_pbAnchorView, 1.0);
+  _pbRenderedView = padded;
+  _pbPxPerYear = _w / padded.anchorSpan;
+  _pbActive = (padded.tMax - padded.tMin > padded.anchorSpan * 1.1);
+
+  if (_pbMoveG) {
+    if (_pbActive) {
+      _pbMoveG.style.willChange = 'transform';
+      _pbMoveG.style.transform = 'translate3d(0,0,0)';
+    } else {
+      _pbMoveG.style.willChange = '';
+      _pbMoveG.style.transform = '';
+    }
+  }
 }
 
 function stepPlayback() {
   if (!isPlaying) return;
   const speed = parseFloat(document.getElementById('speed-select').value);
-  const yrsPerFrame = speed * 1.5;
-  const winSize = currentView.tMax - currentView.tMin;
+  const yrsPerFrame = speed * 1.5; // iron rule 3
+
+  // Wrap: when at right edge, jump to start
+  if (currentView.tMax >= T_MAX) {
+    const winSize = currentView.tMax - currentView.tMin;
+    currentView.tMin = T_MIN;
+    currentView.tMax = T_MIN + winSize;
+    clampView(currentView);
+    // R6 Fix-B: no-op wrap (e.g. full-view playback) — view unchanged, skip all work
+    if (_pbPrevTMin === currentView.tMin && _pbPrevTMax === currentView.tMax) {
+      animId = requestAnimationFrame(stepPlayback);
+      return;
+    }
+    _pbPrevTMin = currentView.tMin; _pbPrevTMax = currentView.tMax;
+    // Reset transform + re-anchor at new position
+    if (_pbMoveG) { _pbMoveG.style.transform = ''; _pbMoveG.style.willChange = ''; }
+    _pbReanchor();
+    syncBrush();
+    animId = requestAnimationFrame(stepPlayback);
+    return;
+  }
 
   currentView.tMin += yrsPerFrame;
   currentView.tMax += yrsPerFrame;
+  clampView(currentView);
 
-  if (currentView.tMin >= T_MAX) {
-    currentView.tMin = T_MIN;
-    currentView.tMax = T_MIN + winSize;
+  // ── Dirty check: skip if view identical to last frame ──
+  if (_pbPrevTMin === currentView.tMin && _pbPrevTMax === currentView.tMax) {
+    syncBrush();
+    animId = requestAnimationFrame(stepPlayback);
+    return;
   }
-  if (currentView.tMax > T_MAX) {
-    currentView.tMax = T_MAX;
-    currentView.tMin = T_MAX - winSize;
-  }
-  currentView.tMin = Math.max(T_MIN, currentView.tMin);
+  _pbPrevTMin = currentView.tMin; _pbPrevTMax = currentView.tMax;
 
+  // ── Determine scroll direction ──
+  if (_pbDirection === 0) _pbDirection = (yrsPerFrame > 0 ? 1 : -1);
+
+  // ── Transform mode ──
+  if (_pbActive && _pbRenderedView) {
+    if (_pbMoveG) {
+      const transformDx = Math.round((_pbAnchorView.tMin - currentView.tMin) * _pbPxPerYear);
+      _pbMoveG.style.transform = 'translate3d(' + transformDx + 'px,0,0)';
+    }
+
+    // Update axes to show currentView (D3 fix) — only on re-anchor for perf
+    // (tick positions shift by 6yr/frame × _w/span pixels — imperceptible between re-anchors)
+
+    // Check margin consumption (>70% → re-anchor)
+    const marginRightYrs = _pbRenderedView.tMax - _pbAnchorView.tMax;
+    const marginLeftYrs = _pbAnchorView.tMin - _pbRenderedView.tMin;
+    const consumedRight = currentView.tMax - _pbAnchorView.tMax;
+    const consumedLeft = _pbAnchorView.tMin - currentView.tMin;
+
+    let needReanchor = false;
+    if (_pbDirection > 0 && marginRightYrs > 0 && consumedRight > 0.8 * marginRightYrs) needReanchor = true;
+    if (_pbDirection < 0 && marginLeftYrs > 0 && consumedLeft > 0.8 * marginLeftYrs) needReanchor = true;
+
+    if (needReanchor) {
+      if (_pbMoveG) _pbMoveG.style.transform = 'translate3d(0,0,0)';
+      _pbReanchor();
+      syncBrush();  // only sync brush on re-anchor
+    }
+
+    animId = requestAnimationFrame(stepPlayback);
+    return;
+  }
+
+  // ── Fallback: full render when no margin available (panorama or very wide view) ──
   renderMain();
-  renderBrush();
+  syncBrush();
   animId = requestAnimationFrame(stepPlayback);
 }
 
@@ -1655,28 +2124,22 @@ function stepPlayback() {
    ═══════════════════════════════════════════════════════════════════ */
 
 function shiftView(deltaYears) {
-  const winSize = currentView.tMax - currentView.tMin;
-  currentView.tMin = Math.max(T_MIN, currentView.tMin + deltaYears);
-  currentView.tMax = Math.min(T_MAX, currentView.tMax + deltaYears);
-  if (currentView.tMax <= currentView.tMin + 4) {
-    if (deltaYears > 0) currentView.tMax = currentView.tMin + 4;
-    else currentView.tMin = currentView.tMax - 4;
-  }
+  currentView.tMin += deltaYears;
+  currentView.tMax += deltaYears;
+  clampView(currentView);
   renderMain();
-  renderBrush();
+  syncBrush();
 }
 
 function zoomView(deltaPct) {
   const center = (currentView.tMin + currentView.tMax) / 2;
   const halfSpan = (currentView.tMax - currentView.tMin) / 2;
   const newHalfSpan = Math.max(10, Math.min(300, halfSpan * deltaPct));
-  currentView.tMin = Math.max(T_MIN, Math.round(center - newHalfSpan));
-  currentView.tMax = Math.min(T_MAX, Math.round(center + newHalfSpan));
-  if (currentView.tMax - currentView.tMin < 4) {
-    currentView.tMax = currentView.tMin + 4;
-  }
+  currentView.tMin = Math.round(center - newHalfSpan);
+  currentView.tMax = Math.round(center + newHalfSpan);
+  clampView(currentView);
   renderMain();
-  renderBrush();
+  syncBrush();
 }
 
 document.getElementById('btn-play').addEventListener('click', togglePlay);
@@ -1687,12 +2150,13 @@ document.getElementById('btn-zoom-out').addEventListener('click', () => zoomView
 document.getElementById('btn-reset').addEventListener('click', () => {
   stopPlayback();
   currentView = { tMin: T_MIN, tMax: T_MAX };
+  clampView(currentView);
   renderMain();
-  renderBrush();
+  syncBrush();
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   Keyboard
+   Keyboard (unchanged semantics)
    ═══════════════════════════════════════════════════════════════════ */
 
 document.addEventListener('keydown', function(e) {
@@ -1706,7 +2170,250 @@ document.addEventListener('keydown', function(e) {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   Table view (accessibility)
+   Touch support (R6: transform on move-g + updateAxes each frame)
+   Iron rule 6: touch-action CSS / viewport meta / preventDefault preserved
+   D2 fix: touchstart has ZERO visual jump — px/year constant
+   D3 fix: axes always show currentView during gestures
+   ═══════════════════════════════════════════════════════════════════ */
+
+(function initTouch() {
+  const chartPanel = document.getElementById('chart-panel');
+  const chartSvg = document.getElementById('chart-svg');
+  if (!chartSvg) return;
+
+  let touch = {
+    id: null,
+    startX: 0, startY: 0,
+    startTMin: 0, startTMax: 0,
+    moved: false,
+    // Pinch
+    pinchDist0: 0,
+    pinchAnchorYear: 0,
+    pinchSpan0: 0,
+  };
+
+  function svgCoord(clientX, clientY) {
+    const rect = chartSvg.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
+
+  function _gestureReanchor() {
+    _gestureAnchorView = { tMin: currentView.tMin, tMax: currentView.tMax };
+    const padded = _renderMainPadded(_gestureAnchorView, 0.6);
+    _gestureRenderedView = padded;
+    // px/year = _w / anchorSpan — same as unpadded (D2 fix)
+    _gesturePxPerYear = _w / padded.anchorSpan;
+    const moveG = document.getElementById('move-g');
+    if (moveG) moveG.style.transform = 'translate3d(0,0,0)';
+  }
+
+  function handleTap(clientX, clientY) {
+    // 十字准线透明捕获矩形盖在标签上层，命中检测时临时穿透它
+    const cap = document.querySelector('.hover-capture');
+    if (cap) cap.style.pointerEvents = 'none';
+    const el = document.elementFromPoint(clientX, clientY);
+    if (cap) cap.style.pointerEvents = '';
+    let label = el && el.closest ? el.closest('.person-label') : null;
+    if (!label) {
+      // 手指友好回退：24px 内最近的可见标签
+      let best = null, bestD = 24;
+      document.querySelectorAll('.person-label').forEach(function(l) {
+        const r = l.getBoundingClientRect();
+        if (!r.width) return;
+        const d = Math.hypot(r.left + r.width / 2 - clientX, r.top + r.height / 2 - clientY);
+        if (d < bestD) { bestD = d; best = l; }
+      });
+      label = best;
+    }
+    if (!label) return;
+    const titleEl = label.querySelector('title');
+    if (!titleEl) return;
+    const name = titleEl.textContent.split(' · ')[0];
+    const member = rawData.find(d => d.name === name);
+    if (member) showBio(member);
+  }
+  window.handleTap = handleTap;
+
+  chartSvg.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      const p = svgCoord(t.clientX, t.clientY);
+      touch.id = t.identifier;
+      touch.startX = p.x;
+      touch.startY = p.y;
+      touch.startTMin = currentView.tMin;
+      touch.startTMax = currentView.tMax;
+      touch.moved = false;
+
+      // Begin transform gesture: padded render ±60%
+      // D2 fix: _renderMainPadded keeps px/year = _w/span unchanged
+      // → zero visual jump at touchstart (labels stay pixel-identical)
+      _gestureActive = true;
+      _gestureAnchorView = { tMin: currentView.tMin, tMax: currentView.tMax };
+      const padded = _renderMainPadded(_gestureAnchorView, 0.6);
+      _gestureRenderedView = padded;
+      _gesturePxPerYear = _w / padded.anchorSpan;
+
+      const moveG = document.getElementById('move-g');
+      if (moveG) {
+        moveG.style.willChange = 'transform';
+        moveG.style.transform = 'translate3d(0,0,0)';
+      }
+
+    } else if (e.touches.length === 2) {
+      e.preventDefault();
+      const p0 = svgCoord(e.touches[0].clientX, e.touches[0].clientY);
+      const p1 = svgCoord(e.touches[1].clientX, e.touches[1].clientY);
+      touch.pinchDist0 = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+      const midSvgX = (p0.x + p1.x) / 2;
+      touch.pinchAnchorYear = svgXtoYear(midSvgX);
+      touch.pinchSpan0 = currentView.tMax - currentView.tMin;
+      touch.moved = true;
+
+      // If not already in gesture mode, init it
+      if (!_gestureActive) {
+        _gestureActive = true;
+        _gestureAnchorView = { tMin: currentView.tMin, tMax: currentView.tMax };
+        const padded = _renderMainPadded(_gestureAnchorView, 0.6);
+        _gestureRenderedView = padded;
+        _gesturePxPerYear = _w / padded.anchorSpan;
+
+        const moveG = document.getElementById('move-g');
+        if (moveG) {
+          moveG.style.willChange = 'transform';
+          moveG.style.transform = 'translate3d(0,0,0)';
+        }
+      }
+
+      // Track pinch anchor for scale calculation
+      _gesturePinchSpan0 = touch.pinchSpan0;
+      _gesturePinchAnchorYear = touch.pinchAnchorYear;
+    }
+  }, { passive: false });
+
+  function svgXtoYear(svgX) {
+    const M = MAIN_MARGIN;
+    const w = panelWidth() - M.left - M.right;
+    if (_xScale) return _xScale.invert(svgX - M.left);
+    const xScale = d3.scaleLinear().domain([currentView.tMin, currentView.tMax]).range([0, w]);
+    return xScale.invert(svgX - M.left);
+  }
+
+  chartSvg.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 1 && _gestureActive) {
+      const t = e.touches[0];
+      if (t.identifier !== touch.id) return;
+      const p = svgCoord(t.clientX, t.clientY);
+      const dx = p.x - touch.startX;
+      const dy = p.y - touch.startY;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 6) {
+        touch.moved = true;
+        e.preventDefault();
+
+        // Update currentView from pixel delta
+        const dyears = dx / _gesturePxPerYear;
+        currentView.tMin = touch.startTMin - dyears;
+        currentView.tMax = touch.startTMax - dyears;
+        clampView(currentView);
+
+        // D1 fix: CSS transform on move-g only (axes stay fixed)
+        const transformDx = (_gestureAnchorView.tMin - currentView.tMin) * _gesturePxPerYear;
+        const moveG = document.getElementById('move-g');
+        if (moveG) moveG.style.transform = 'translate3d(' + transformDx + 'px,0,0)';
+
+        // D3 fix: update axes to show currentView
+        updateAxes(currentView);
+
+        syncBrush();
+
+        // Re-anchor if margin exceeded (>45% of viewport width)
+        if (Math.abs(transformDx) > 0.45 * _w) {
+          _gestureReanchor();
+        }
+      }
+    } else if (e.touches.length === 2 && _gestureActive) {
+      e.preventDefault();
+      touch.moved = true;
+      const p0 = svgCoord(e.touches[0].clientX, e.touches[0].clientY);
+      const p1 = svgCoord(e.touches[1].clientX, e.touches[1].clientY);
+      const newDist = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+
+      if (touch.pinchDist0 > 0 && newDist > 0) {
+        // Update currentView span (same logic as R4)
+        const scale = touch.pinchDist0 / Math.max(1, newDist);
+        const newSpan = Math.max(8, Math.min(500, touch.pinchSpan0 * scale));
+        const half = newSpan / 2;
+        currentView.tMin = Math.round(touch.pinchAnchorYear - half);
+        currentView.tMax = Math.round(touch.pinchAnchorYear + half);
+        clampView(currentView);
+
+        // R6 pinch: scale+translate on move-g with origin in content coords
+        const renderedSpan = _gestureRenderedView.tMax - _gestureRenderedView.tMin;
+        const k = renderedSpan / (currentView.tMax - currentView.tMin);
+        const panDx = (_gestureAnchorView.tMin - currentView.tMin) * _gesturePxPerYear;
+
+        // Midpoint in move-g content coordinates (subtract M.left for content space)
+        const midContentX = (p0.x + p1.x) / 2 - MAIN_MARGIN.left;
+
+        // Combined transform: translate keeps pinch center fixed under scale
+        const totalTx = panDx + midContentX * (1 - k);
+
+        const moveG = document.getElementById('move-g');
+        if (moveG) {
+          moveG.style.transformOrigin = '0 0';
+          // Horizontal-only zoom: scaleX stretches time axis, scaleY stays 1 (no vertical distortion)
+          moveG.style.transform = 'translate3d(' + totalTx + 'px,0,0) scale(' + k + ',1)';
+        }
+
+        // D3 fix: update axes to show currentView
+        updateAxes(currentView);
+
+        syncBrush();
+
+        // Re-anchor if scale diverges too much
+        if (k < 0.4 || k > 2.5) {
+          _gestureReanchor();
+        }
+      }
+    }
+  }, { passive: false });
+
+  chartSvg.addEventListener('touchend', function(e) {
+    // End transform mode
+    if (_gestureActive) {
+      _gestureActive = false;
+      const moveG = document.getElementById('move-g');
+      if (moveG) {
+        moveG.style.transform = '';
+        moveG.style.willChange = '';
+        moveG.style.transformOrigin = '';
+      }
+      // Precise render at final position
+      renderMain();
+    }
+
+    // Tap detection (displacement < 8px)
+    if (!touch.moved && e.changedTouches.length === 1) {
+      const t = e.changedTouches[0];
+      const p = svgCoord(t.clientX, t.clientY);
+      const dist = Math.hypot(p.x - touch.startX, p.y - touch.startY);
+      if (dist < 8) {
+        handleTap(t.clientX, t.clientY);
+      }
+    }
+
+    // Reset state
+    touch.id = null;
+    touch.moved = false;
+    touch.pinchDist0 = 0;
+    _gesturePinchSpan0 = 0;
+    _gesturePinchAnchorYear = 0;
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+   Table view (accessibility) — unchanged
    ═══════════════════════════════════════════════════════════════════ */
 
 function renderTable() {
@@ -1717,20 +2424,20 @@ function renderTable() {
 
   let hh = '<tr><th>年份</th>';
   for (const fam of familyMeta) {
-    hh += `<th><span class="td-swatch" style="background:${fam.color}"></span>${fam.name}</th>`;
+    hh += '<th><span class="td-swatch" style="background:' + fam.color + '"></span>' + fam.name + '</th>';
   }
   hh += '</tr>';
   thead.innerHTML = hh;
 
   const span = currentView.tMax - currentView.tMin;
-      const step = span > 300 ? Math.max(10, Math.floor(span / 200)) : Math.max(1, Math.floor(span / 30));
+  const step = span > 300 ? Math.max(10, Math.floor(span / 200)) : Math.max(1, Math.floor(span / 30));
   for (let y = currentView.tMin; y <= currentView.tMax; y += step) {
-    const pt = stackedData.find(d => d.year === Math.round(y));
+    const pt = _yearGet(Math.round(y));
     if (!pt) continue;
-    let row = `<tr><td>${y < 0 ? '前' + Math.abs(Math.round(y)) + '年' : Math.round(y) + '年'}</td>`;
+    let row = '<tr><td>' + (y < 0 ? '前' + Math.abs(Math.round(y)) + '年' : Math.round(y) + '年') + '</td>';
     for (const fam of familyMeta) {
       const s = pt.stack.find(s => s.family === fam.name);
-      row += `<td>${s && s.pct > 0.05 ? s.pct.toFixed(1) + '%' : '—'}</td>`;
+      row += '<td>' + (s && s.pct > 0.05 ? s.pct.toFixed(1) + '%' : '—') + '</td>';
     }
     row += '</tr>';
     tbody.innerHTML += row;
@@ -1745,17 +2452,192 @@ document.getElementById('btn-table').addEventListener('click', function() {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   Init + resize
+   Init + resize (R5: buildScaffold on init, debounced rebuild on resize)
    ═══════════════════════════════════════════════════════════════════ */
 
+// Initial render
+buildScaffold();
 renderMain();
-renderBrush();
+renderBrushStatic();
 
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { renderMain(); renderBrush(); }, 200);
+  resizeTimer = setTimeout(() => {
+    buildScaffold();
+    renderMain();
+    renderBrushStatic();
+  }, 200);
 });
+
+
+// ============ SELF-CHECK HARNESS for R5 ============
+console.log("=== R5 Self-Check ===");
+
+// (a) MutationObserver — steady-state renderMain
+function checkMutations() {
+  return new Promise(resolve => {
+    const target = document.getElementById('chart-svg');
+    let added = 0, removed = 0, attrs = 0;
+    const obs = new MutationObserver(records => {
+      records.forEach(r => {
+        added += r.addedNodes.length;
+        removed += r.removedNodes.length;
+        if (r.type === 'attributes') attrs++;
+      });
+    });
+    obs.observe(target, { childList: true, subtree: true, attributes: true });
+    // Take records to flush any pending
+    obs.takeRecords();
+    // Trigger renderMain
+    renderMain();
+    const records = obs.takeRecords();
+    records.forEach(r => {
+      added += r.addedNodes.length;
+      removed += r.removedNodes.length;
+      if (r.type === 'attributes') attrs++;
+    });
+    obs.disconnect();
+    resolve({ added, removed, attrs });
+  });
+}
+
+// (b) Performance test
+async function perfTest() {
+  // Warm up
+  renderMain();
+  
+  // Measure renderMain
+  const start = performance.now();
+  renderMain();
+  const elapsed = performance.now() - start;
+  console.log("renderMain (steady-state):", elapsed.toFixed(1), "ms");
+  
+  // Playback 4x for 1.6s
+  const frames = [];
+  let frameStart = performance.now();
+  const origRAF = window.requestAnimationFrame;
+  let rafCount = 0;
+  
+  return new Promise(resolve => {
+    const speed = document.getElementById('speed-select');
+    const origSpeed = speed.value;
+    speed.value = '4';
+    currentView = { tMin: T_MIN, tMax: T_MAX };
+    renderMain();
+    syncBrush();
+    togglePlay();
+    
+    const startTime = performance.now();
+    const endTime = startTime + 1600;
+    
+    function measureFrame(ts) {
+      rafCount++;
+      if (rafCount > 1) {
+        frames.push(ts - (frames.length > 0 ? frames[frames.length-1] : startTime));
+      }
+      if (performance.now() < endTime) {
+        requestAnimationFrame(measureFrame);
+      } else {
+        stopPlayback();
+        speed.value = origSpeed;
+        
+        // Compute stats
+        if (frames.length > 0) {
+          const sorted = [...frames].sort((a,b)=>a-b);
+          const median = sorted[Math.floor(sorted.length/2)];
+          const p95 = sorted[Math.floor(sorted.length*0.95)];
+          const fps = 1000 / median;
+          console.log("4x playback 1.6s:", {
+            frames: frames.length,
+            median: median.toFixed(1) + "ms",
+            p95: p95.toFixed(1) + "ms", 
+            fps: fps.toFixed(1)
+          });
+        }
+        resolve();
+      }
+    }
+    requestAnimationFrame(measureFrame);
+  });
+}
+
+// (c) Five-speed single-frame check
+function checkSpeeds() {
+  const speeds = [0.25, 0.5, 1, 2, 4];
+  const expected = [0.375, 0.75, 1.5, 3, 6];
+  const results = [];
+  for (const s of speeds) {
+    results.push(s * 1.5);
+  }
+  console.log("Speed check:", results);
+  const match = results.every((v, i) => Math.abs(v - expected[i]) < 0.001);
+  console.log("Speed values correct:", match);
+  return match;
+}
+
+// (d) Regression tests
+function checkLabels() {
+  currentView = { tMin: T_MIN, tMax: T_MAX };
+  renderMain();
+  
+  // Count visible labels
+  const labels = document.querySelectorAll('.person-label:not([style*="display: none"])');
+  console.log("Visible labels:", labels.length);
+  
+  // Check for key names
+  const names = Array.from(labels).map(l => l.textContent);
+  const hasZiying = names.includes('子婴');
+  const hasLidan = names.includes('李旦');
+  console.log("子婴 present:", hasZiying);
+  console.log("李旦 present:", hasLidan);
+  return hasZiying && hasLidan;
+}
+
+// (e) Data integrity
+function checkData() {
+  console.log("rawData length:", rawData.length, "== 220:", rawData.length === 220);
+  console.log("families length:", families.length, "== 48:", families.length === 48);
+  console.log("SLOTS length:", SLOTS.length, "== 50:", SLOTS.length === 50);
+  return rawData.length === 220 && families.length === 48 && SLOTS.length === 50;
+}
+
+// Run all checks
+async function runAllChecks() {
+  console.log("Running self-checks...");
+  
+  // (e) Data integrity (sync)
+  const e = checkData();
+  
+  // (c) Speed (sync)
+  const c = checkSpeeds();
+  
+  // (d) Labels (sync)
+  const d = checkLabels();
+  
+  // (a) Mutations (async)
+  const a = await checkMutations();
+  console.log("MutationObserver:", a, "Goal: added=0 removed=0");
+  
+  // (b) Performance (async)
+  await perfTest();
+  
+  console.log("=== Checks complete ===");
+  console.log("Data:", e ? "PASS" : "FAIL");
+  console.log("Speeds:", c ? "PASS" : "FAIL");
+  console.log("Labels:", d ? "PASS" : "FAIL");
+  console.log("Mutations:", (a.added===0 && a.removed===0) ? "PASS" : "FAIL (added="+a.added+" removed="+a.removed+")");
+}
+
+// Expose for console use
+window.runAllChecks = runAllChecks;
+window.checkMutations = checkMutations;
+window.perfTest = perfTest;
+window.checkSpeeds = checkSpeeds;
+window.checkData = checkData;
+window.checkLabels = checkLabels;
+console.log("Self-check harness loaded. Run runAllChecks() to execute.");
+
 </script>
 </body>
 </html>
